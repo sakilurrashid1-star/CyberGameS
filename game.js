@@ -1,588 +1,663 @@
-// Canvas Setup
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-// Game States
-const GAME_STATE = {
-    MENU: 'menu',
-    PLAYING: 'playing',
-    PAUSED: 'paused',
-    GAME_OVER: 'gameOver'
+const PACKET = {
+  MALWARE: "malware",
+  SPYWARE: "spyware",
+  UPDATE: "update",
+  SCANNER: "scanner",
+  DRONE: "drone",
+  BOSS: "boss"
 };
 
-// Game Configuration
-const GAME_CONFIG = {
-    canvas: {
-        width: 800,
-        height: 600
-    },
-    player: {
-        width: 80,
-        height: 20,
-        speed: 6,
-        initialHealth: 100,
-        maxBoosts: 3
-    },
-    enemies: {
-        initialCount: 3,
-        maxPerLevel: 12,
-        spawnInterval: 1500
-    },
-    packets: {
-        size: 10,
-        speeds: {
-            malware: 4,
-            spyware: 3,
-            update: 2
-        }
-    }
+const state = {
+  current: "menu",
+  score: 0,
+  level: 1,
+  health: 100,
+  bursts: 3,
+  startTime: 0,
+  elapsed: 0,
+  lastSpawn: 0,
+  bossActive: false,
+  bossHp: 0,
+  bossMaxHp: 0,
+  bossTimer: 0,
+  packets: [],
+  particles: [],
+  stars: []
 };
 
-// Game Variables
-let gameState = GAME_STATE.MENU;
-let gameScore = 0;
-let gameLevel = 1;
-let playerHealth = GAME_CONFIG.player.initialHealth;
-let boostCount = GAME_CONFIG.player.maxBoosts;
-let gameStartTime = 0;
-let gameTime = 0;
-let isPaused = false;
-
-// Player Object
 const player = {
-    x: GAME_CONFIG.canvas.width / 2 - GAME_CONFIG.player.width / 2,
-    y: GAME_CONFIG.canvas.height - 40,
-    width: GAME_CONFIG.player.width,
-    height: GAME_CONFIG.player.height,
-    speed: GAME_CONFIG.player.speed,
-    isBoostActive: false,
-    boostDuration: 0,
-    boostMaxDuration: 3
+  x: 0,
+  y: canvas.height - 45,
+  width: 170,
+  height: 20,
+  boostActive: false,
+  boostTimer: 0,
+  boostDuration: 3
 };
 
-// Game Objects Arrays
-let packets = [];
-let particles = [];
-let spawnTimer = 0;
-let lastSpawnTime = 0;
+let mouseX = canvas.width / 2;
+let animationFrame = null;
+let audioCtx = null;
 
-// Mouse Position
-let mouseX = GAME_CONFIG.canvas.width / 2;
-let mouseY = 0;
-
-// Packet Types
-const PACKET_TYPES = {
-    MALWARE: 'malware',      // Red - Harmful
-    SPYWARE: 'spyware',      // Yellow - Dangerous
-    UPDATE: 'update'         // Green - Beneficial
-};
-
-// Initialize Canvas
-function initializeGame() {
-    const container = document.querySelector('.game-area');
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-
-    // Adjust canvas if too small or too large
-    if (canvas.width > 1200) canvas.width = 1200;
-    if (canvas.height > 700) canvas.height = 700;
-
-    // Update game config based on canvas
-    GAME_CONFIG.canvas.width = canvas.width;
-    GAME_CONFIG.canvas.height = canvas.height;
-
-    // Reset player position
-    player.x = canvas.width / 2 - player.width / 2;
-    player.y = canvas.height - 40;
-}
-
-// Start Game
-function startGame() {
-    gameState = GAME_STATE.PLAYING;
-    gameScore = 0;
-    gameLevel = 1;
-    playerHealth = GAME_CONFIG.player.initialHealth;
-    boostCount = GAME_CONFIG.player.maxBoosts;
-    packets = [];
-    particles = [];
-    spawnTimer = 0;
-    lastSpawnTime = 0;
-    gameStartTime = Date.now();
-
-    player.isBoostActive = false;
-    player.boostDuration = 0;
-
-    screenChange('gameScreen');
-    initializeGame();
-    gameLoop();
-}
-
-// Game Loop
-function gameLoop() {
-    if (gameState === GAME_STATE.PLAYING) {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
+function initAudio() {
+  if (!audioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      audioCtx = new AudioCtx();
     }
+  }
 }
 
-// Update Game State
-function update() {
-    gameTime = Math.floor((Date.now() - gameStartTime) / 1000);
+function playTone(freq, duration, type = "sine", volume = 0.04) {
+  if (!audioCtx) return;
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
 
-    // Update player position
-    if (mouseX < player.width / 2) {
-        player.x = 0;
-    } else if (mouseX > canvas.width - player.width / 2) {
-        player.x = canvas.width - player.width;
-    } else {
-        player.x = mouseX - player.width / 2;
-    }
+  oscillator.type = type;
+  oscillator.frequency.value = freq;
 
-    // Update boost
-    if (player.isBoostActive) {
-        player.boostDuration -= 1/60;
-        if (player.boostDuration <= 0) {
-            player.isBoostActive = false;
-            player.boostDuration = 0;
-        }
-    }
+  gainNode.gain.value = volume;
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
 
-    // Spawn new packets
-    const spawnRate = Math.max(800 - (gameLevel - 1) * 100, 400);
-    if (Date.now() - lastSpawnTime > spawnRate && packets.length < (GAME_CONFIG.enemies.maxPerLevel * gameLevel / 5)) {
-        spawnPacket();
-        lastSpawnTime = Date.now();
-    }
+  oscillator.start();
+  gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
 
-    // Update packets
-    for (let i = packets.length - 1; i >= 0; i--) {
-        const packet = packets[i];
-        packet.y += packet.speed;
-
-        // Check collision with player
-        if (checkCollision(player, packet)) {
-            if (player.isBoostActive) {
-                // Blocked by boost
-                packets.splice(i, 1);
-                handlePacketBlock(packet);
-            } else if (packet.type === PACKET_TYPES.UPDATE) {
-                // Beneficial packet
-                packets.splice(i, 1);
-                handleUpdatePacket(packet);
-            } else if (packet.type === PACKET_TYPES.MALWARE) {
-                // Malware blocked
-                packets.splice(i, 1);
-                handlePacketBlock(packet);
-            } else if (packet.type === PACKET_TYPES.SPYWARE) {
-                // Spyware hit
-                packets.splice(i, 1);
-                handleSpywareHit(packet);
-            }
-        } else if (packet.y > canvas.height) {
-            // Packet escaped
-            packets.splice(i, 1);
-            if (packet.type === PACKET_TYPES.MALWARE) {
-                playerHealth -= 10;
-            } else if (packet.type === PACKET_TYPES.SPYWARE) {
-                playerHealth -= 5;
-            }
-        }
-    }
-
-    // Update particles
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 1;
-
-        if (p.life <= 0) {
-            particles.splice(i, 1);
-        }
-    }
-
-    // Check game over
-    if (playerHealth <= 0) {
-        endGame();
-    }
-
-    // Update UI
-    updateUI();
-
-    // Increase level based on score
-    const newLevel = Math.floor(gameScore / 500) + 1;
-    if (newLevel > gameLevel) {
-        gameLevel = newLevel;
-    }
+  oscillator.stop(audioCtx.currentTime + duration);
 }
 
-// Draw Game
-function draw() {
-    // Clear canvas
-    ctx.fillStyle = 'rgba(10, 14, 39, 0.2)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid background
-    ctx.strokeStyle = 'rgba(0, 188, 212, 0.1)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < canvas.width; i += 50) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvas.height);
-        ctx.stroke();
-    }
-    for (let i = 0; i < canvas.height; i += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(canvas.width, i);
-        ctx.stroke();
-    }
-
-    // Draw packets
-    for (const packet of packets) {
-        drawPacket(packet);
-    }
-
-    // Draw particles
-    for (const p of particles) {
-        ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${p.life / p.maxLife})`;
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-    }
-
-    // Draw player (firewall)
-    drawPlayer();
-
-    // Draw level warning if many threats
-    if (packets.length > GAME_CONFIG.enemies.maxPerLevel * 0.7) {
-        ctx.fillStyle = 'rgba(244, 67, 54, 0.2)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'rgba(244, 67, 54, 0.8)';
-        ctx.font = 'bold 20px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('THREAT LEVEL CRITICAL!', canvas.width / 2, 30);
-    }
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-// Draw Packet
-function drawPacket(packet) {
-    let color;
-    switch (packet.type) {
-        case PACKET_TYPES.MALWARE:
-            color = '#FF5252';
-            break;
-        case PACKET_TYPES.SPYWARE:
-            color = '#FFC107';
-            break;
-        case PACKET_TYPES.UPDATE:
-            color = '#4CAF50';
-            break;
-    }
-
-    // Draw packet body
-    ctx.fillStyle = color;
-    ctx.fillRect(packet.x, packet.y, packet.width, packet.height);
-
-    // Draw packet border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(packet.x, packet.y, packet.width, packet.height);
-
-    // Draw packet icon
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.font = 'bold 10px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    if (packet.type === PACKET_TYPES.MALWARE) {
-        ctx.fillText('🦠', packet.x + packet.width / 2, packet.y + packet.height / 2);
-    } else if (packet.type === PACKET_TYPES.SPYWARE) {
-        ctx.fillText('👁', packet.x + packet.width / 2, packet.y + packet.height / 2);
-    } else {
-        ctx.fillText('✓', packet.x + packet.width / 2, packet.y + packet.height / 2);
-    }
+function showMenu() {
+  state.current = "menu";
+  showScreen("menuScreen");
+  loadLeaderboard();
 }
 
-// Draw Player (Firewall)
-function drawPlayer() {
-    const gradient = ctx.createLinearGradient(player.x, player.y, player.x, player.y + player.height);
-    
-    if (player.isBoostActive) {
-        gradient.addColorStop(0, '#00E5FF');
-        gradient.addColorStop(1, '#00B8D4');
-    } else {
-        gradient.addColorStop(0, '#00BCD4');
-        gradient.addColorStop(1, '#0097A7');
-    }
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-
-    // Draw border
-    ctx.strokeStyle = player.isBoostActive ? '#00E5FF' : '#00BCD4';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(player.x, player.y, player.width, player.height);
-
-    // Draw shield effect if boosted
-    if (player.isBoostActive) {
-        ctx.strokeStyle = `rgba(0, 229, 255, ${0.5 * player.boostDuration / player.boostMaxDuration})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(player.x + player.width / 2, player.y, Math.max(player.width, player.height) + 20, 0, Math.PI * 2);
-        ctx.stroke();
-    }
-
-    // Draw player label
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 12px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('FIREWALL', player.x + player.width / 2, player.y + player.height / 2);
-}
-
-// Spawn Packet
-function spawnPacket() {
-    const types = Object.values(PACKET_TYPES);
-    const randomType = types[Math.floor(Math.random() * types.length)];
-
-    const packet = {
-        x: Math.random() * (canvas.width - 20),
-        y: -20,
-        width: 20,
-        height: 20,
-        type: randomType,
-        speed: GAME_CONFIG.packets.speeds[randomType]
-    };
-
-    packets.push(packet);
-}
-
-// Check Collision
-function checkCollision(rect1, rect2) {
-    return rect1.x < rect2.x + rect2.width &&
-           rect1.x + rect1.width > rect2.x &&
-           rect1.y < rect2.y + rect2.height &&
-           rect1.y + rect1.height > rect2.y;
-}
-
-// Handle Packet Block
-function handlePacketBlock(packet) {
-    gameScore += 10;
-    createExplosion(packet.x, packet.y, '#FF5252');
-}
-
-// Handle Update Packet
-function handleUpdatePacket(packet) {
-    gameScore += 5;
-    playerHealth = Math.min(playerHealth + 15, GAME_CONFIG.player.initialHealth);
-    createExplosion(packet.x, packet.y, '#4CAF50');
-}
-
-// Handle Spyware Hit
-function handleSpywareHit(packet) {
-    playerHealth -= 15;
-    createExplosion(packet.x, packet.y, '#FFC107');
-}
-
-// Create Explosion Effect
-function createExplosion(x, y, color) {
-    const particleCount = 8;
-    const rgb = hexToRgb(color);
-
-    for (let i = 0; i < particleCount; i++) {
-        const angle = (Math.PI * 2 * i) / particleCount;
-        const velocity = 3 + Math.random() * 2;
-
-        particles.push({
-            x: x,
-            y: y,
-            vx: Math.cos(angle) * velocity,
-            vy: Math.sin(angle) * velocity,
-            life: 30,
-            maxLife: 30,
-            size: 3 + Math.random() * 3,
-            r: rgb.r,
-            g: rgb.g,
-            b: rgb.b
-        });
-    }
-}
-
-// Hex to RGB
-function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : { r: 0, g: 0, b: 0 };
-}
-
-// Update UI
-function updateUI() {
-    document.getElementById('score').textContent = gameScore;
-    document.getElementById('level').textContent = gameLevel;
-    document.getElementById('boostCount').textContent = boostCount;
-
-    const healthPercent = Math.max(0, (playerHealth / GAME_CONFIG.player.initialHealth) * 100);
-    document.getElementById('healthBar').style.width = healthPercent + '%';
-}
-
-// End Game
-function endGame() {
-    gameState = GAME_STATE.GAME_OVER;
-
-    document.getElementById('finalScore').textContent = gameScore;
-    document.getElementById('finalLevel').textContent = gameLevel;
-    document.getElementById('survivalTime').textContent = gameTime + 's';
-    document.getElementById('playerName').value = '';
-
-    screenChange('gameOverScreen');
-}
-
-// Save Score
-function saveScore() {
-    const playerName = document.getElementById('playerName').value || 'Anonymous';
-    const score = {
-        name: playerName,
-        score: gameScore,
-        level: gameLevel,
-        time: gameTime,
-        timestamp: new Date().toLocaleString()
-    };
-
-    let scores = JSON.parse(localStorage.getItem('cybergames_scores')) || [];
-    scores.push(score);
-    scores.sort((a, b) => b.score - a.score);
-    scores = scores.slice(0, 100); // Keep top 100
-
-    localStorage.setItem('cybergames_scores', JSON.stringify(scores));
-    backToMenu();
-}
-
-// Pause Game
-function pauseGame() {
-    gameState = GAME_STATE.PAUSED;
-    screenChange('pauseScreen');
-}
-
-// Resume Game
-function resumeGame() {
-    gameState = GAME_STATE.PLAYING;
-    screenChange('gameScreen');
-    gameLoop();
-}
-
-// Quit Game
-function quitGame() {
-    gameState = GAME_STATE.GAME_OVER;
-    endGame();
-}
-
-// Screen Management
-function screenChange(screenId) {
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    document.getElementById(screenId).classList.add('active');
-}
-
-// Menu Functions
-function backToMenu() {
-    gameState = GAME_STATE.MENU;
-    screenChange('mainMenu');
-    loadLeaderboard();
-}
-
-function backToMenuFromPause() {
-    gameState = GAME_STATE.MENU;
-    screenChange('mainMenu');
-}
-
-function showInstructions() {
-    screenChange('instructionsScreen');
-}
-
-function closeInstructions() {
-    screenChange('mainMenu');
+function showHowToPlay() {
+  showScreen("howToPlayScreen");
 }
 
 function showLeaderboard() {
-    loadLeaderboard();
-    screenChange('leaderboardScreen');
+  loadLeaderboard();
+  showScreen("leaderboardScreen");
 }
 
-function closeLeaderboard() {
-    screenChange('mainMenu');
+function startGame() {
+  initAudio();
+  playTone(440, 0.08, "triangle", 0.04);
+
+  state.current = "playing";
+  state.score = 0;
+  state.level = 1;
+  state.health = 100;
+  state.bursts = 3;
+  state.startTime = Date.now();
+  state.elapsed = 0;
+  state.lastSpawn = 0;
+  state.bossActive = false;
+  state.bossHp = 0;
+  state.bossMaxHp = 0;
+  state.bossTimer = 0;
+
+  state.packets = [];
+  state.particles = [];
+  state.stars = [];
+
+  for (let i = 0; i < 90; i++) {
+    state.stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 2.2 + 0.8,
+      speed: Math.random() * 0.8 + 0.3
+    });
+  }
+
+  player.x = canvas.width / 2 - player.width / 2;
+  player.y = canvas.height - 42;
+  player.boostActive = false;
+  player.boostTimer = 0;
+
+  updateHud();
+  showScreen("gameScreen");
+  cancelAnimationFrame(animationFrame);
+  animationFrame = requestAnimationFrame(gameLoop);
+}
+
+function pauseGame() {
+  if (state.current !== "playing") return;
+  state.current = "paused";
+  showScreen("pauseScreen");
+}
+
+function resumeGame() {
+  if (state.current !== "paused") return;
+  state.current = "playing";
+  showScreen("gameScreen");
+  cancelAnimationFrame(animationFrame);
+  animationFrame = requestAnimationFrame(gameLoop);
+}
+
+function quitToMenu() {
+  state.current = "menu";
+  showScreen("menuScreen");
+  loadLeaderboard();
+}
+
+function updateHud() {
+  document.getElementById("scoreValue").textContent = state.score;
+  document.getElementById("levelValue").textContent = state.level;
+  document.getElementById("burstValue").textContent = state.bursts;
+
+  const health = clamp(state.health, 0, 100);
+  document.getElementById("healthFill").style.width = health + "%";
+}
+
+function gameLoop() {
+  if (state.current !== "playing") return;
+
+  updateGame();
+  drawGame();
+
+  cancelAnimationFrame(animationFrame);
+  animationFrame = requestAnimationFrame(gameLoop);
+}
+
+function updateGame() {
+  state.elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  state.level = 1 + Math.floor(state.score / 350);
+
+  if (state.level >= 3 && !state.bossActive && state.level % 3 === 0) {
+    startBossWave();
+  }
+
+  player.x = clamp(mouseX - player.width / 2, 0, canvas.width - player.width);
+
+  if (player.boostActive) {
+    player.boostTimer -= 1 / 60;
+    if (player.boostTimer <= 0) {
+      player.boostActive = false;
+      player.boostTimer = 0;
+    }
+  }
+
+  const spawnDelay = Math.max(300, 1200 - state.level * 90);
+
+  if (!state.bossActive && Date.now() - state.lastSpawn > spawnDelay) {
+    spawnPacket();
+    state.lastSpawn = Date.now();
+
+    if (Math.random() < 0.18 + state.level * 0.014) {
+      spawnPacket(true);
+    }
+  }
+
+  if (state.bossActive) {
+    state.bossTimer -= 1;
+    if (state.bossTimer <= 0) {
+      endBossWave();
+    }
+  }
+
+  for (let i = state.packets.length - 1; i >= 0; i--) {
+    const packet = state.packets[i];
+    packet.y += packet.speed;
+
+    if (packet.type === PACKET.BOSS || packet.type === PACKET.DRONE) {
+      packet.x += packet.vx;
+      if (packet.x < 20 || packet.x > canvas.width - packet.width - 20) packet.vx *= -1;
+    }
+
+    if (checkCollision(player, packet)) {
+      if (packet.type === PACKET.UPDATE) {
+        state.score += 20;
+        state.health = Math.min(100, state.health + 18);
+        createExplosion(packet.x, packet.y, "#5af0a1", 18);
+        playTone(560, 0.08, "triangle", 0.03);
+        state.packets.splice(i, 1);
+      } else if (packet.type === PACKET.MALWARE) {
+        if (player.boostActive) {
+          state.score += 24;
+          createExplosion(packet.x, packet.y, "#5ee7ff", 18);
+          playTone(700, 0.07, "square", 0.03);
+        } else {
+          state.health -= 18;
+          state.score += 8;
+          createExplosion(packet.x, packet.y, "#ff5d72", 18);
+          playTone(180, 0.12, "sawtooth", 0.05);
+        }
+        state.packets.splice(i, 1);
+      } else if (packet.type === PACKET.SPYWARE) {
+        if (player.boostActive) {
+          state.score += 14;
+          createExplosion(packet.x, packet.y, "#ffd166", 18);
+          playTone(600, 0.07, "triangle", 0.03);
+        } else {
+          state.health -= 26;
+          createExplosion(packet.x, packet.y, "#ffd166", 20);
+          playTone(180, 0.14, "triangle", 0.04);
+        }
+        state.packets.splice(i, 1);
+      } else if (packet.type === PACKET.SCANNER) {
+        if (player.boostActive) {
+          state.score += 32;
+          createExplosion(packet.x, packet.y, "#b995ff", 22);
+          playTone(780, 0.08, "square", 0.03);
+        } else {
+          state.health -= 34;
+          createExplosion(packet.x, packet.y, "#b995ff", 24);
+          playTone(160, 0.16, "sawtooth", 0.05);
+        }
+        state.packets.splice(i, 1);
+      } else if (packet.type === PACKET.DRONE) {
+        if (player.boostActive) {
+          state.score += 42;
+          createExplosion(packet.x, packet.y, "#5ee7ff", 24);
+          playTone(820, 0.09, "square", 0.04);
+        } else {
+          state.health -= 42;
+          createExplosion(packet.x, packet.y, "#b995ff", 26);
+          playTone(150, 0.18, "sawtooth", 0.05);
+        }
+        state.packets.splice(i, 1);
+      } else if (packet.type === PACKET.BOSS) {
+        state.bossHp -= 1;
+        createExplosion(packet.x, packet.y, "#ff5d72", 30);
+        playTone(120, 0.08, "sawtooth", 0.05);
+
+        if (state.bossHp <= 0) {
+          state.score += 600;
+          state.packets.splice(i, 1);
+          endBossWave();
+          playTone(900, 0.18, "triangle", 0.05);
+        }
+      }
+    } else if (packet.y > canvas.height + 40 || packet.x < -50 || packet.x > canvas.width + 80) {
+      state.packets.splice(i, 1);
+
+      if (packet.type !== PACKET.UPDATE && packet.type !== PACKET.BOSS) {
+        state.health -= packet.type === PACKET.SCANNER ? 16 : packet.type === PACKET.DRONE ? 20 : 10;
+      }
+    }
+  }
+
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 1;
+
+    if (p.life <= 0) {
+      state.particles.splice(i, 1);
+    }
+  }
+
+  for (let i = state.stars.length - 1; i >= 0; i--) {
+    const star = state.stars[i];
+    star.y += star.speed;
+
+    if (star.y > canvas.height) {
+      star.y = 0;
+      star.x = Math.random() * canvas.width;
+    }
+  }
+
+  if (state.health <= 0) {
+    endGame();
+  }
+
+  updateHud();
+}
+
+function spawnPacket(forceSpecial = false) {
+  let type = PACKET.MALWARE;
+
+  if (state.level >= 4 && forceSpecial) {
+    const specialPool = [PACKET.SCANNER, PACKET.DRONE];
+    type = specialPool[Math.floor(Math.random() * specialPool.length)];
+  } else {
+    const roll = Math.random();
+
+    if (roll < 0.42) type = PACKET.MALWARE;
+    else if (roll < 0.7) type = PACKET.SPYWARE;
+    else if (roll < 0.88) type = PACKET.UPDATE;
+    else type = PACKET.SCANNER;
+  }
+
+  if (state.level <= 1 && type === PACKET.SCANNER) {
+    type = PACKET.MALWARE;
+  }
+
+  const packet = {
+    x: Math.random() * (canvas.width - 26),
+    y: -30,
+    width: 24,
+    height: 24,
+    type,
+    speed: getPacketSpeed(type),
+    vx: (Math.random() - 0.5) * 2.6
+  };
+
+  state.packets.push(packet);
+}
+
+function startBossWave() {
+  if (state.bossActive) return;
+
+  state.bossActive = true;
+  state.bossTimer = 180;
+  state.bossHp = 34 + state.level * 10;
+  state.bossMaxHp = state.bossHp;
+
+  const boss = {
+    x: canvas.width / 2 - 60,
+    y: -50,
+    width: 120,
+    height: 42,
+    type: PACKET.BOSS,
+    speed: 1.8,
+    vx: 2.6
+  };
+
+  state.packets.push(boss);
+  playTone(110, 0.22, "sawtooth", 0.05);
+}
+
+function endBossWave() {
+  state.bossActive = false;
+  state.bossHp = 0;
+  state.bossMaxHp = 0;
+  state.bossTimer = 0;
+}
+
+function getPacketSpeed(type) {
+  switch (type) {
+    case PACKET.MALWARE:
+      return 3.2 + state.level * 0.22;
+    case PACKET.SPYWARE:
+      return 2.8 + state.level * 0.18;
+    case PACKET.UPDATE:
+      return 2.2 + state.level * 0.12;
+    case PACKET.SCANNER:
+      return 4 + state.level * 0.25;
+    case PACKET.DRONE:
+      return 4.2 + state.level * 0.3;
+    case PACKET.BOSS:
+      return 1.6 + state.level * 0.1;
+    default:
+      return 2.5;
+  }
+}
+
+function checkCollision(playerRect, packet) {
+  return (
+    playerRect.x < packet.x + packet.width &&
+    playerRect.x + playerRect.width > packet.x &&
+    playerRect.y < packet.y + packet.height &&
+    playerRect.y + playerRect.height > packet.y
+  );
+}
+
+function drawGame() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackground();
+  drawPackets();
+  drawBossMeter();
+  drawPlayer();
+  drawParticles();
+}
+
+function drawBackground() {
+  ctx.fillStyle = "#060d15";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  state.stars.forEach((star) => {
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(94,231,255,0.7)";
+    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  for (let x = 0; x < canvas.width; x += 32) {
+    ctx.strokeStyle = "rgba(94,231,255,0.08)";
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+
+  for (let y = 0; y < canvas.height; y += 32) {
+    ctx.strokeStyle = "rgba(94,231,255,0.08)";
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+
+  if (state.bossActive) {
+    ctx.fillStyle = "rgba(255, 93, 114, 0.08)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function drawPackets() {
+  state.packets.forEach((packet) => {
+    let color = "#ffffff";
+
+    if (packet.type === PACKET.MALWARE) color = "#ff5d72";
+    if (packet.type === PACKET.SPYWARE) color = "#ffd166";
+    if (packet.type === PACKET.UPDATE) color = "#5af0a1";
+    if (packet.type === PACKET.SCANNER) color = "#b995ff";
+    if (packet.type === PACKET.DRONE) color = "#6ec8ff";
+    if (packet.type === PACKET.BOSS) color = "#ff475f";
+
+    ctx.fillStyle = color;
+    ctx.fillRect(packet.x, packet.y, packet.width, packet.height);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.strokeRect(packet.x, packet.y, packet.width, packet.height);
+
+    if (packet.type === PACKET.BOSS) {
+      ctx.fillStyle = "#08141d";
+      ctx.font = "bold 12px Segoe UI";
+      ctx.textAlign = "center";
+      ctx.fillText("BOSS", packet.x + packet.width / 2, packet.y + packet.height / 2);
+    } else {
+      ctx.fillStyle = "#08141d";
+      ctx.font = "bold 11px Segoe UI";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      const label =
+        packet.type === PACKET.MALWARE ? "M" :
+        packet.type === PACKET.SPYWARE ? "S" :
+        packet.type === PACKET.UPDATE ? "U" :
+        packet.type === PACKET.DRONE ? "D" : "X";
+
+      ctx.fillText(label, packet.x + packet.width / 2, packet.y + packet.height / 2);
+    }
+  });
+}
+
+function drawBossMeter() {
+  if (!state.bossActive) return;
+
+  const width = 420;
+  const x = (canvas.width - width) / 2;
+  const y = 18;
+
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(x, y, width, 18);
+
+  const hpRatio = clamp(state.bossHp / state.bossMaxHp, 0, 1);
+  ctx.fillStyle = "#ff5d72";
+  ctx.fillRect(x, y, width * hpRatio, 18);
+
+  ctx.strokeStyle = "rgba(255,255,255,0.2)";
+  ctx.strokeRect(x, y, width, 18);
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 11px Segoe UI";
+  ctx.textAlign = "center";
+  ctx.fillText("BOSS SIGNAL // THREAT VECTOR", canvas.width / 2, 31);
+}
+
+function drawPlayer() {
+  ctx.fillStyle = player.boostActive ? "#7ef5ff" : "#5ee7ff";
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+
+  if (player.boostActive) {
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(126,245,255,0.8)";
+    ctx.lineWidth = 2;
+    ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 94, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = "rgba(255,255,255,0.28)";
+  ctx.strokeRect(player.x, player.y, player.width, player.height);
+
+  ctx.fillStyle = "#061d2f";
+  ctx.font = "bold 12px Segoe UI";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("FIREWALL", player.x + player.width / 2, player.y + player.height / 2);
+}
+
+function drawParticles() {
+  state.particles.forEach((p) => {
+    ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${Math.max(0, p.life / 30)})`;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  });
+}
+
+function createExplosion(x, y, color, count) {
+  const rgb = hexToRgb(color);
+
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count;
+    const speed = 1 + Math.random() * 2.8;
+
+    state.particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 30,
+      r: rgb.r,
+      g: rgb.g,
+      b: rgb.b,
+      size: 3 + Math.random() * 4
+    });
+  }
+}
+
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "");
+  const bigint = parseInt(clean, 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255
+  };
+}
+
+function endGame() {
+  state.current = "gameover";
+  document.getElementById("finalScore").textContent = state.score;
+  document.getElementById("finalLevel").textContent = state.level;
+  document.getElementById("finalTime").textContent = state.elapsed + "s";
+  document.getElementById("playerName").value = "";
+  showScreen("gameOverScreen");
+  playTone(100, 0.25, "sawtooth", 0.05);
+}
+
+function saveScore() {
+  const name = document.getElementById("playerName").value.trim() || "Anonymous";
+  const entry = {
+    name,
+    score: state.score,
+    level: state.level,
+    time: state.elapsed
+  };
+
+  const scores = JSON.parse(localStorage.getItem("cybergames_scores") || "[]");
+  scores.push(entry);
+  scores.sort((a, b) => b.score - a.score);
+  localStorage.setItem("cybergames_scores", JSON.stringify(scores.slice(0, 10)));
+
+  showMenu();
 }
 
 function loadLeaderboard() {
-    const scores = JSON.parse(localStorage.getItem('cybergames_scores')) || [];
-    const tbody = document.getElementById('leaderboardBody');
-    const noScores = document.getElementById('noScores');
+  const scores = JSON.parse(localStorage.getItem("cybergames_scores") || "[]");
+  const tbody = document.getElementById("leaderboardBody");
+  const noScores = document.getElementById("noScores");
 
-    tbody.innerHTML = '';
+  tbody.innerHTML = "";
 
-    if (scores.length === 0) {
-        noScores.style.display = 'block';
-        return;
-    }
+  if (!scores.length) {
+    noScores.classList.remove("hidden");
+    return;
+  }
 
-    noScores.style.display = 'none';
+  noScores.classList.add("hidden");
 
-    scores.slice(0, 50).forEach((score, index) => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${score.name}</td>
-            <td>${score.score}</td>
-            <td>Level ${score.level}</td>
-            <td>${score.time}s</td>
-        `;
-    });
+  scores.forEach((entry, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${entry.name}</td>
+      <td>${entry.score}</td>
+      <td>${entry.level}</td>
+      <td>${entry.time}s</td>
+    `;
+    tbody.appendChild(row);
+  });
 }
 
-// Event Listeners
-document.addEventListener('mousemove', (e) => {
-    const gameArea = document.querySelector('.game-area');
-    if (gameArea) {
-        const rect = gameArea.getBoundingClientRect();
-        mouseX = e.clientX - rect.left;
-    }
+function activateBurst() {
+  if (state.current !== "playing") return;
+  if (state.bursts <= 0) return;
+  if (player.boostActive) return;
+
+  player.boostActive = true;
+  player.boostTimer = player.boostDuration;
+  state.bursts -= 1;
+  updateHud();
+  playTone(620, 0.1, "triangle", 0.04);
+}
+
+document.addEventListener("mousemove", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  const relativeX = (event.clientX - rect.left) / rect.width;
+  mouseX = relativeX * canvas.width;
 });
 
-// Keyboard Controls
-document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && gameState === GAME_STATE.PLAYING && boostCount > 0) {
-        if (!player.isBoostActive) {
-            player.isBoostActive = true;
-            player.boostDuration = player.boostMaxDuration;
-            boostCount--;
-        }
-        e.preventDefault();
-    }
+document.addEventListener("keydown", (event) => {
+  if (event.code === "Space" && state.current === "playing") {
+    event.preventDefault();
+    activateBurst();
+  }
 });
 
-// Click to activate boost
-document.getElementById('gameCanvas').addEventListener('click', () => {
-    if (gameState === GAME_STATE.PLAYING && boostCount > 0) {
-        if (!player.isBoostActive) {
-            player.isBoostActive = true;
-            player.boostDuration = player.boostMaxDuration;
-            boostCount--;
-        }
-    }
+canvas.addEventListener("click", () => {
+  if (state.current === "playing") {
+    activateBurst();
+  }
 });
 
-// Initial Load
-document.addEventListener('DOMContentLoaded', () => {
-    loadLeaderboard();
-    screenChange('mainMenu');
-});
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
-// Handle Resize
-window.addEventListener('resize', () => {
-    if (gameState === GAME_STATE.PLAYING) {
-        initializeGame();
-    }
-});
+showMenu();
+loadLeaderboard();
+updateHud();

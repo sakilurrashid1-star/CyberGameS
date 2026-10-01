@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CyberGameS | Ultra Edition</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div id="menuScreen" class="screen active">
+      <div class="hero-panel">
+        <div class="brand">
+          <span class="brand-tag">CYBER DEFENSE SIMULATOR // ECO-THREAT MATRIX</span>
+          <h1>CyberGameS</h1>
+        </div>
+
+        <div class="menu-actions">
+          <button class="primary" onclick="startGame()">Deploy Defense</button>
+          <button onclick="showLeaderboard()">Leaderboard</button>
+          <button onclick="showHowToPlay()">Mission Brief</button>
+        </div>
+
+        <div class="stats-strip">
+          <div class="strip-card">
+            <span>Threat level</span>
+            <strong>Adaptive</strong>
+          </div>
+          <div class="strip-card">
+            <span>Mode</span>
+            <strong>Boss Rush</strong>
+          </div>
+          <div class="strip-card">
+            <span>Status</span>
+            <strong>Online</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="howToPlayScreen" class="screen">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Mission Brief</h2>
+          <button class="icon-button" onclick="showMenu()">✕</button>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card">
+            <h3>Objective</h3>
+            <p>Defend the firewall and stop hostile cyber traffic from penetrating the system.</p>
+          </div>
+          <div class="info-card">
+            <h3>Controls</h3>
+            <p>Move the mouse to steer the firewall. Press Space or click to trigger a shield burst.</p>
+          </div>
+          <div class="info-card">
+            <h3>Threats</h3>
+            <p>Malware, spyware, scanners, drones, and elite boss infections.</p>
+          </div>
+          <div class="info-card">
+            <h3>Strategy</h3>
+            <p>Use shield bursts during high-density attacks. Collect green updates for healing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="leaderboardScreen" class="screen">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Top Defenders</h2>
+          <button class="icon-button" onclick="showMenu()">✕</button>
+        </div>
+
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Score</th>
+              <th>Level</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+
+        <p id="noScores" class="muted hidden">No saved runs yet. Be the first defender.</p>
+      </div>
+    </div>
+
+    <div id="gameScreen" class="screen">
+      <div class="hud">
+        <div class="hud-item">
+          <span>HEALTH</span>
+          <div class="health-bar">
+            <div id="healthFill"></div>
+          </div>
+        </div>
+
+        <div class="hud-item">
+          <span>SCORE</span>
+          <strong id="scoreValue">0</strong>
+        </div>
+
+        <div class="hud-item">
+          <span>LEVEL</span>
+          <strong id="levelValue">1</strong>
+        </div>
+
+        <div class="hud-item">
+          <span>BURSTS</span>
+          <strong id="burstValue">3</strong>
+        </div>
+      </div>
+
+      <canvas id="gameCanvas" width="960" height="560"></canvas>
+
+      <div class="game-actions">
+        <button onclick="pauseGame()">Pause</button>
+        <button onclick="quitToMenu()">Quit</button>
+      </div>
+    </div>
+
+    <div id="pauseScreen" class="screen">
+      <div class="panel center">
+        <h2>Paused</h2>
+        <p>Mission suspended. Defense systems are stable.</p>
+        <button class="primary" onclick="resumeGame()">Resume</button>
+        <button onclick="quitToMenu()">Main Menu</button>
+      </div>
+    </div>
+
+    <div id="gameOverScreen" class="screen">
+      <div class="panel center">
+        <h2>Firewall Breached</h2>
+        <div class="summary">
+          <p>Final Score: <strong id="finalScore">0</strong></p>
+          <p>Level Reached: <strong id="finalLevel">1</strong></p>
+          <p>Time Survived: <strong id="finalTime">0s</strong></p>
+        </div>
+
+        <input id="playerName" type="text" maxlength="20" placeholder="Callsign..." />
+        <button class="primary" onclick="saveScore()">Save Score</button>
+        <button onclick="startGame()">Retry</button>
+        <button onclick="showMenu()">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
