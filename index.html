@@ -3,188 +3,276 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CyberFire - Battle Royale</title>
+  <title>GameHub Pro - Ultimate Gaming Platform</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app-container">
-    <!-- Main Menu -->
-    <div id="mainMenu" class="screen active">
-      <div class="menu-background"></div>
-      <div class="menu-content">
-        <div class="game-title">
-          <h1>CYBER<span class="fire">FIRE</span></h1>
-          <p class="subtitle">Last Player Standing</p>
+    <!-- Main Lobby -->
+    <div id="lobby" class="screen active">
+      <div class="lobby-header">
+        <div class="logo">
+          <h1>🎮 GameHub Pro</h1>
+          <p>Ultimate Gaming Platform</p>
         </div>
-        
-        <div class="menu-stats">
-          <div class="stat-box">
-            <span class="stat-label">Players Online</span>
-            <span class="stat-value" id="playersOnline">100</span>
+        <div class="user-panel">
+          <div class="user-info">
+            <span id="userName">Player</span>
+            <span id="userCoins" class="coins">💰 0</span>
           </div>
-          <div class="stat-box">
-            <span class="stat-label">Win Rate</span>
-            <span class="stat-value" id="winRate">0%</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">Kills</span>
-            <span class="stat-value" id="totalKills">0</span>
-          </div>
+          <button class="profile-btn" onclick="openProfile()">👤</button>
+          <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
+      </div>
 
-        <div class="menu-buttons">
-          <button class="btn btn-primary" onclick="startGame()">
-            <span class="btn-icon">▶</span> ENTER BATTLEGROUND
-          </button>
-          <button class="btn btn-secondary" onclick="showShop()">
-            <span class="btn-icon">🛍️</span> SHOP
-          </button>
-          <button class="btn btn-secondary" onclick="showStats()">
-            <span class="btn-icon">📊</span> STATS
-          </button>
-          <button class="btn btn-secondary" onclick="showSettings()">
-            <span class="btn-icon">⚙️</span> SETTINGS
-          </button>
-        </div>
+      <div class="lobby-content">
+        <div class="games-grid">
+          <div class="game-card" onclick="selectGame('battleRoyale')">
+            <div class="game-icon">💥</div>
+            <h3>Battle Royale</h3>
+            <p>100 Player Deathmatch</p>
+            <span class="difficulty">⭐⭐⭐</span>
+          </div>
 
-        <div class="menu-footer">
-          <p>© 2024 CyberFire. All rights reserved.</p>
+          <div class="game-card" onclick="selectGame('carrom')">
+            <div class="game-icon">⚫</div>
+            <h3>Carrom Pool</h3>
+            <p>Classic Disk Shooting</p>
+            <span class="difficulty">⭐⭐</span>
+          </div>
+
+          <div class="game-card" onclick="selectGame('racing')">
+            <div class="game-icon">🏎️</div>
+            <h3>Car Racing</h3>
+            <p>Fast Track Championship</p>
+            <span class="difficulty">⭐⭐⭐</span>
+          </div>
+
+          <div class="game-card" onclick="selectGame('snake')">
+            <div class="game-icon">🐍</div>
+            <h3>Snake Master</h3>
+            <p>Grow & Survive</p>
+            <span class="difficulty">⭐⭐</span>
+          </div>
+
+          <div class="game-card" onclick="selectGame('flappy')">
+            <div class="game-icon">🐦</div>
+            <h3>Flappy Wings</h3>
+            <p>Dodge & Score</p>
+            <span class="difficulty">⭐⭐⭐</span>
+          </div>
+
+          <div class="game-card" onclick="selectGame('puzzle2048')">
+            <div class="game-icon">🧩</div>
+            <h3>2048 Puzzle</h3>
+            <p>Merge & Win</p>
+            <span class="difficulty">⭐⭐⭐</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lobby-footer">
+        <div class="featured-section">
+          <h4>🔥 Featured Event</h4>
+          <p>Spring Championship - Win Extra Rewards!</p>
         </div>
       </div>
     </div>
 
-    <!-- Game Screen -->
-    <div id="gameScreen" class="screen">
-      <canvas id="gameCanvas"></canvas>
-      
-      <div class="hud-top">
-        <div class="minimap-container">
-          <canvas id="minimapCanvas" class="minimap"></canvas>
-          <div class="minimap-player"></div>
+    <!-- Battle Royale Game -->
+    <div id="battleRoyaleScreen" class="screen">
+      <canvas id="battleRoyaleCanvas"></canvas>
+      <div class="game-hud">
+        <div class="hud-top-left">
+          <div class="minimap"><canvas id="minimapCanvas"></canvas></div>
+          <div class="zone-timer">Zone: <span id="zoneTime">60s</span></div>
         </div>
-        
-        <div class="game-info">
-          <div class="info-item">
-            <span class="label">Players Left</span>
-            <span class="value" id="playersLeft">100</span>
+        <div class="hud-top-right">
+          <div class="players-left">Players: <span id="playersCount">100</span></div>
+          <div class="round-info">Wave: <span id="waveNumber">1</span></div>
+        </div>
+        <div class="hud-bottom">
+          <div class="health-bar-section">
+            <span>HP</span>
+            <div class="health-bar"><div class="health-fill" id="brHealth"></div></div>
+            <span id="healthNumber">100/100</span>
           </div>
-          <div class="info-item">
-            <span class="label">Zone</span>
-            <span class="value" id="zoneInfo">Safe</span>
+          <div class="ammo-section">
+            <span id="ammo">30</span> / <span id="magazine">120</span>
           </div>
-        </div>
-      </div>
-
-      <div class="hud-left">
-        <div class="inventory-panel">
-          <div class="inventory-slot" id="slot1"></div>
-          <div class="inventory-slot" id="slot2"></div>
-          <div class="inventory-slot" id="slot3"></div>
-        </div>
-      </div>
-
-      <div class="hud-bottom">
-        <div class="health-section">
-          <div class="health-container">
-            <div class="health-bar">
-              <div class="health-fill" id="healthFill"></div>
-            </div>
-            <span class="health-text"><span id="healthValue">100</span>/100</span>
-          </div>
-        </div>
-
-        <div class="ammo-section">
-          <div class="ammo-info">
-            <span id="ammoValue">30</span> / <span id="ammoReserve">120</span>
-          </div>
-        </div>
-
-        <div class="ability-section">
-          <div class="ability-btn" id="abilityBtn" onclick="useAbility()">
-            <div class="ability-icon">💨</div>
-            <div class="ability-cooldown" id="abilityCooldown"></div>
+          <div class="score-section">
+            <span>Score: <strong id="brScore">0</strong></span>
           </div>
         </div>
       </div>
-
-      <div class="crosshair"></div>
-
-      <div class="damage-indicator" id="damageIndicator"></div>
-
       <div class="game-controls">
-        <button class="btn-small" onclick="toggleInventory()">I</button>
-        <button class="btn-small" onclick="pauseGame()">PAUSE</button>
+        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
+        <button class="game-btn" onclick="backToLobby()">EXIT</button>
       </div>
     </div>
 
-    <!-- Shop Screen -->
-    <div id="shopScreen" class="screen">
-      <div class="shop-header">
-        <h2>WEAPON SHOP</h2>
-        <button class="close-btn" onclick="backToMenu()">✕</button>
+    <!-- Carrom Pool Game -->
+    <div id="carromScreen" class="screen">
+      <canvas id="carromCanvas"></canvas>
+      <div class="game-hud carrom-hud">
+        <div class="hud-info">
+          <div>Score: <span id="carromScore">0</span></div>
+          <div>Balls: <span id="ballsLeft">9</span></div>
+          <div>Fouls: <span id="fouls">0</span></div>
+        </div>
       </div>
-      <div class="shop-grid" id="shopGrid"></div>
-    </div>
-
-    <!-- Stats Screen -->
-    <div id="statsScreen" class="screen">
-      <div class="stats-header">
-        <h2>PLAYER STATISTICS</h2>
-        <button class="close-btn" onclick="backToMenu()">✕</button>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-name">Total Matches</span>
-          <span class="stat-num" id="statMatches">0</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-name">Total Wins</span>
-          <span class="stat-num" id="statWins">0</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-name">Total Kills</span>
-          <span class="stat-num" id="statKillsTotal">0</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-name">Headshots</span>
-          <span class="stat-num" id="statHeadshots">0</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-name">K/D Ratio</span>
-          <span class="stat-num" id="statKD">0.00</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-name">Playtime (hrs)</span>
-          <span class="stat-num" id="statPlaytime">0</span>
-        </div>
+      <div class="game-controls">
+        <button class="game-btn" onclick="resetCarrom()">RESET</button>
+        <button class="game-btn" onclick="backToLobby()">EXIT</button>
       </div>
     </div>
 
-    <!-- Game Over Screen -->
-    <div id="gameOverScreen" class="screen">
-      <div class="game-over-panel">
-        <h2 id="gameOverTitle">YOU DIED</h2>
-        <div class="game-over-stats">
-          <p><span class="label">Rank:</span> <span id="finalRank">-</span></p>
-          <p><span class="label">Kills:</span> <span id="finalKills">0</span></p>
-          <p><span class="label">Damage Dealt:</span> <span id="finalDamage">0</span></p>
-          <p><span class="label">Survival Time:</span> <span id="finalTime">0s</span></p>
+    <!-- Racing Game -->
+    <div id="racingScreen" class="screen">
+      <canvas id="racingCanvas"></canvas>
+      <div class="game-hud racing-hud">
+        <div class="race-info">
+          <div class="position">Position: <span id="position">1/4</span></div>
+          <div class="speed">Speed: <span id="speed">0</span> km/h</div>
+          <div class="lap">Lap: <span id="lap">1/3</span></div>
+          <div class="time">Time: <span id="raceTime">0:00</span></div>
         </div>
-        <div class="game-over-buttons">
-          <button class="btn btn-primary" onclick="startGame()">PLAY AGAIN</button>
-          <button class="btn btn-secondary" onclick="backToMenu()">MAIN MENU</button>
+      </div>
+      <div class="game-controls">
+        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
+        <button class="game-btn" onclick="backToLobby()">EXIT</button>
+      </div>
+    </div>
+
+    <!-- Snake Game -->
+    <div id="snakeScreen" class="screen">
+      <canvas id="snakeCanvas"></canvas>
+      <div class="game-hud snake-hud">
+        <div class="snake-info">
+          <div>Score: <span id="snakeScore">0</span></div>
+          <div>Level: <span id="snakeLevel">1</span></div>
+          <div>Best: <span id="snakeBest">0</span></div>
+        </div>
+      </div>
+      <div class="game-controls">
+        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
+        <button class="game-btn" onclick="backToLobby()">EXIT</button>
+      </div>
+    </div>
+
+    <!-- Flappy Bird Game -->
+    <div id="flappyScreen" class="screen">
+      <canvas id="flappyCanvas"></canvas>
+      <div class="game-hud flappy-hud">
+        <div class="flappy-info">
+          <div>Score: <span id="flappyScore">0</span></div>
+          <div>Best: <span id="flappyBest">0</span></div>
+        </div>
+      </div>
+      <div class="game-controls">
+        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
+        <button class="game-btn" onclick="backToLobby()">EXIT</button>
+      </div>
+    </div>
+
+    <!-- 2048 Puzzle Game -->
+    <div id="puzzle2048Screen" class="screen">
+      <div class="puzzle-container">
+        <div class="puzzle-header">
+          <h2>2048</h2>
+          <div class="puzzle-stats">
+            <div class="stat">Score: <span id="puzzleScore">0</span></div>
+            <div class="stat">Best: <span id="puzzleBest">0</span></div>
+          </div>
+        </div>
+        <div class="puzzle-grid" id="puzzleGrid"></div>
+        <div class="puzzle-controls">
+          <button class="game-btn" onclick="resetPuzzle()">NEW GAME</button>
+          <button class="game-btn" onclick="backToLobby()">EXIT</button>
         </div>
       </div>
     </div>
 
-    <!-- Pause Screen -->
-    <div id="pauseScreen" class="screen">
+    <!-- Profile Screen -->
+    <div id="profileScreen" class="screen">
+      <div class="profile-container">
+        <button class="close-btn" onclick="backToLobby()">✕</button>
+        <div class="profile-header">
+          <div class="avatar">👤</div>
+          <h2 id="profileName">Player Name</h2>
+          <p id="profileLevel">Level 1</p>
+        </div>
+        <div class="profile-stats">
+          <div class="stat-item">
+            <span>Total Wins</span>
+            <span id="profileWins">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Total Games</span>
+            <span id="profileGames">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Total Coins</span>
+            <span id="profileCoins">0</span>
+          </div>
+          <div class="stat-item">
+            <span>Play Time</span>
+            <span id="profileTime">0h</span>
+          </div>
+        </div>
+        <div class="achievements-section">
+          <h3>🏆 Achievements</h3>
+          <div class="achievements-grid">
+            <div class="achievement">
+              <span>🎯</span>
+              <p>First Blood</p>
+            </div>
+            <div class="achievement">
+              <span>⚡</span>
+              <p>Speed Demon</p>
+            </div>
+            <div class="achievement">
+              <span>🎪</span>
+              <p>Combo Master</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settingsScreen" class="screen">
+      <div class="settings-container">
+        <button class="close-btn" onclick="backToLobby()">✕</button>
+        <h2>Settings</h2>
+        <div class="settings-group">
+          <label>Sound Volume</label>
+          <input type="range" min="0" max="100" value="70" id="volumeSlider">
+        </div>
+        <div class="settings-group">
+          <label>Brightness</label>
+          <input type="range" min="50" max="150" value="100" id="brightnessSlider">
+        </div>
+        <div class="settings-group">
+          <label>
+            <input type="checkbox" checked> Enable Notifications
+          </label>
+        </div>
+        <div class="settings-group">
+          <label>
+            <input type="checkbox"> Dark Mode
+          </label>
+        </div>
+        <button class="game-btn" onclick="backToLobby()">SAVE & CLOSE</button>
+      </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pauseMenu" class="overlay-menu">
       <div class="pause-panel">
         <h2>PAUSED</h2>
-        <div class="pause-buttons">
-          <button class="btn btn-primary" onclick="resumeGame()">RESUME</button>
-          <button class="btn btn-secondary" onclick="backToMenu()">QUIT MATCH</button>
-        </div>
+        <button class="game-btn" onclick="resumeCurrentGame()">RESUME</button>
+        <button class="game-btn" onclick="backToLobby()">EXIT TO LOBBY</button>
       </div>
     </div>
   </div>
