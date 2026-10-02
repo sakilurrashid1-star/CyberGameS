@@ -3,148 +3,188 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CyberGameS | Ultra Edition</title>
+  <title>CyberFire - Battle Royale</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <div id="menuScreen" class="screen active">
-      <div class="hero-panel">
-        <div class="brand">
-          <span class="brand-tag">CYBER DEFENSE SIMULATOR // ECO-THREAT MATRIX</span>
-          <h1>CyberGameS</h1>
+  <div class="app-container">
+    <!-- Main Menu -->
+    <div id="mainMenu" class="screen active">
+      <div class="menu-background"></div>
+      <div class="menu-content">
+        <div class="game-title">
+          <h1>CYBER<span class="fire">FIRE</span></h1>
+          <p class="subtitle">Last Player Standing</p>
+        </div>
+        
+        <div class="menu-stats">
+          <div class="stat-box">
+            <span class="stat-label">Players Online</span>
+            <span class="stat-value" id="playersOnline">100</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Win Rate</span>
+            <span class="stat-value" id="winRate">0%</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Kills</span>
+            <span class="stat-value" id="totalKills">0</span>
+          </div>
         </div>
 
-        <div class="menu-actions">
-          <button class="primary" onclick="startGame()">Deploy Defense</button>
-          <button onclick="showLeaderboard()">Leaderboard</button>
-          <button onclick="showHowToPlay()">Mission Brief</button>
+        <div class="menu-buttons">
+          <button class="btn btn-primary" onclick="startGame()">
+            <span class="btn-icon">▶</span> ENTER BATTLEGROUND
+          </button>
+          <button class="btn btn-secondary" onclick="showShop()">
+            <span class="btn-icon">🛍️</span> SHOP
+          </button>
+          <button class="btn btn-secondary" onclick="showStats()">
+            <span class="btn-icon">📊</span> STATS
+          </button>
+          <button class="btn btn-secondary" onclick="showSettings()">
+            <span class="btn-icon">⚙️</span> SETTINGS
+          </button>
         </div>
 
-        <div class="stats-strip">
-          <div class="strip-card">
-            <span>Threat level</span>
-            <strong>Adaptive</strong>
-          </div>
-          <div class="strip-card">
-            <span>Mode</span>
-            <strong>Boss Rush</strong>
-          </div>
-          <div class="strip-card">
-            <span>Status</span>
-            <strong>Online</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="howToPlayScreen" class="screen">
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Mission Brief</h2>
-          <button class="icon-button" onclick="showMenu()">✕</button>
-        </div>
-
-        <div class="info-grid">
-          <div class="info-card">
-            <h3>Objective</h3>
-            <p>Defend the firewall and stop hostile cyber traffic from penetrating the system.</p>
-          </div>
-          <div class="info-card">
-            <h3>Controls</h3>
-            <p>Move the mouse to steer the firewall. Press Space or click to trigger a shield burst.</p>
-          </div>
-          <div class="info-card">
-            <h3>Threats</h3>
-            <p>Malware, spyware, scanners, drones, and elite boss infections.</p>
-          </div>
-          <div class="info-card">
-            <h3>Strategy</h3>
-            <p>Use shield bursts during high-density attacks. Collect green updates for healing.</p>
-          </div>
+        <div class="menu-footer">
+          <p>© 2024 CyberFire. All rights reserved.</p>
         </div>
       </div>
     </div>
 
-    <div id="leaderboardScreen" class="screen">
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Top Defenders</h2>
-          <button class="icon-button" onclick="showMenu()">✕</button>
-        </div>
-
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Name</th>
-              <th>Score</th>
-              <th>Level</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboardBody"></tbody>
-        </table>
-
-        <p id="noScores" class="muted hidden">No saved runs yet. Be the first defender.</p>
-      </div>
-    </div>
-
+    <!-- Game Screen -->
     <div id="gameScreen" class="screen">
-      <div class="hud">
-        <div class="hud-item">
-          <span>HEALTH</span>
-          <div class="health-bar">
-            <div id="healthFill"></div>
+      <canvas id="gameCanvas"></canvas>
+      
+      <div class="hud-top">
+        <div class="minimap-container">
+          <canvas id="minimapCanvas" class="minimap"></canvas>
+          <div class="minimap-player"></div>
+        </div>
+        
+        <div class="game-info">
+          <div class="info-item">
+            <span class="label">Players Left</span>
+            <span class="value" id="playersLeft">100</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Zone</span>
+            <span class="value" id="zoneInfo">Safe</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-left">
+        <div class="inventory-panel">
+          <div class="inventory-slot" id="slot1"></div>
+          <div class="inventory-slot" id="slot2"></div>
+          <div class="inventory-slot" id="slot3"></div>
+        </div>
+      </div>
+
+      <div class="hud-bottom">
+        <div class="health-section">
+          <div class="health-container">
+            <div class="health-bar">
+              <div class="health-fill" id="healthFill"></div>
+            </div>
+            <span class="health-text"><span id="healthValue">100</span>/100</span>
           </div>
         </div>
 
-        <div class="hud-item">
-          <span>SCORE</span>
-          <strong id="scoreValue">0</strong>
+        <div class="ammo-section">
+          <div class="ammo-info">
+            <span id="ammoValue">30</span> / <span id="ammoReserve">120</span>
+          </div>
         </div>
 
-        <div class="hud-item">
-          <span>LEVEL</span>
-          <strong id="levelValue">1</strong>
-        </div>
-
-        <div class="hud-item">
-          <span>BURSTS</span>
-          <strong id="burstValue">3</strong>
+        <div class="ability-section">
+          <div class="ability-btn" id="abilityBtn" onclick="useAbility()">
+            <div class="ability-icon">💨</div>
+            <div class="ability-cooldown" id="abilityCooldown"></div>
+          </div>
         </div>
       </div>
 
-      <canvas id="gameCanvas" width="960" height="560"></canvas>
+      <div class="crosshair"></div>
 
-      <div class="game-actions">
-        <button onclick="pauseGame()">Pause</button>
-        <button onclick="quitToMenu()">Quit</button>
-      </div>
-    </div>
+      <div class="damage-indicator" id="damageIndicator"></div>
 
-    <div id="pauseScreen" class="screen">
-      <div class="panel center">
-        <h2>Paused</h2>
-        <p>Mission suspended. Defense systems are stable.</p>
-        <button class="primary" onclick="resumeGame()">Resume</button>
-        <button onclick="quitToMenu()">Main Menu</button>
+      <div class="game-controls">
+        <button class="btn-small" onclick="toggleInventory()">I</button>
+        <button class="btn-small" onclick="pauseGame()">PAUSE</button>
       </div>
     </div>
 
+    <!-- Shop Screen -->
+    <div id="shopScreen" class="screen">
+      <div class="shop-header">
+        <h2>WEAPON SHOP</h2>
+        <button class="close-btn" onclick="backToMenu()">✕</button>
+      </div>
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
+
+    <!-- Stats Screen -->
+    <div id="statsScreen" class="screen">
+      <div class="stats-header">
+        <h2>PLAYER STATISTICS</h2>
+        <button class="close-btn" onclick="backToMenu()">✕</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-name">Total Matches</span>
+          <span class="stat-num" id="statMatches">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-name">Total Wins</span>
+          <span class="stat-num" id="statWins">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-name">Total Kills</span>
+          <span class="stat-num" id="statKillsTotal">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-name">Headshots</span>
+          <span class="stat-num" id="statHeadshots">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-name">K/D Ratio</span>
+          <span class="stat-num" id="statKD">0.00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-name">Playtime (hrs)</span>
+          <span class="stat-num" id="statPlaytime">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
     <div id="gameOverScreen" class="screen">
-      <div class="panel center">
-        <h2>Firewall Breached</h2>
-        <div class="summary">
-          <p>Final Score: <strong id="finalScore">0</strong></p>
-          <p>Level Reached: <strong id="finalLevel">1</strong></p>
-          <p>Time Survived: <strong id="finalTime">0s</strong></p>
+      <div class="game-over-panel">
+        <h2 id="gameOverTitle">YOU DIED</h2>
+        <div class="game-over-stats">
+          <p><span class="label">Rank:</span> <span id="finalRank">-</span></p>
+          <p><span class="label">Kills:</span> <span id="finalKills">0</span></p>
+          <p><span class="label">Damage Dealt:</span> <span id="finalDamage">0</span></p>
+          <p><span class="label">Survival Time:</span> <span id="finalTime">0s</span></p>
         </div>
+        <div class="game-over-buttons">
+          <button class="btn btn-primary" onclick="startGame()">PLAY AGAIN</button>
+          <button class="btn btn-secondary" onclick="backToMenu()">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
 
-        <input id="playerName" type="text" maxlength="20" placeholder="Callsign..." />
-        <button class="primary" onclick="saveScore()">Save Score</button>
-        <button onclick="startGame()">Retry</button>
-        <button onclick="showMenu()">Menu</button>
+    <!-- Pause Screen -->
+    <div id="pauseScreen" class="screen">
+      <div class="pause-panel">
+        <h2>PAUSED</h2>
+        <div class="pause-buttons">
+          <button class="btn btn-primary" onclick="resumeGame()">RESUME</button>
+          <button class="btn btn-secondary" onclick="backToMenu()">QUIT MATCH</button>
+        </div>
       </div>
     </div>
   </div>
