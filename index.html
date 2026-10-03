@@ -1,282 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GameHub Pro - Ultimate Gaming Platform</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="app-container">
-    <!-- Main Lobby -->
-    <div id="lobby" class="screen active">
-      <div class="lobby-header">
-        <div class="logo">
-          <h1>🎮 GameHub Pro</h1>
-          <p>Ultimate Gaming Platform</p>
-        </div>
-        <div class="user-panel">
-          <div class="user-info">
-            <span id="userName">Player</span>
-            <span id="userCoins" class="coins">💰 0</span>
-          </div>
-          <button class="profile-btn" onclick="openProfile()">👤</button>
-          <button class="settings-btn" onclick="openSettings()">⚙️</button>
-        </div>
-      </div>
-
-      <div class="lobby-content">
-        <div class="games-grid">
-          <div class="game-card" onclick="selectGame('battleRoyale')">
-            <div class="game-icon">💥</div>
-            <h3>Battle Royale</h3>
-            <p>100 Player Deathmatch</p>
-            <span class="difficulty">⭐⭐⭐</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyber Defense Command</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div id="mainMenu" class="screen active">
+        <div class="backdrop-grid"></div>
+        <div class="menu-panel">
+          <div class="brand-block">
+            <p class="eyebrow">NATIONAL CYBER DEFENSE GRID</p>
+            <h1>Cyber Defense <span>Command</span></h1>
+            <p class="tagline">Guard the network, intercept threats, and stabilize critical systems.</p>
           </div>
 
-          <div class="game-card" onclick="selectGame('carrom')">
-            <div class="game-icon">⚫</div>
-            <h3>Carrom Pool</h3>
-            <p>Classic Disk Shooting</p>
-            <span class="difficulty">⭐⭐</span>
-          </div>
-
-          <div class="game-card" onclick="selectGame('racing')">
-            <div class="game-icon">🏎️</div>
-            <h3>Car Racing</h3>
-            <p>Fast Track Championship</p>
-            <span class="difficulty">⭐⭐⭐</span>
-          </div>
-
-          <div class="game-card" onclick="selectGame('snake')">
-            <div class="game-icon">🐍</div>
-            <h3>Snake Master</h3>
-            <p>Grow & Survive</p>
-            <span class="difficulty">⭐⭐</span>
-          </div>
-
-          <div class="game-card" onclick="selectGame('flappy')">
-            <div class="game-icon">🐦</div>
-            <h3>Flappy Wings</h3>
-            <p>Dodge & Score</p>
-            <span class="difficulty">⭐⭐⭐</span>
-          </div>
-
-          <div class="game-card" onclick="selectGame('puzzle2048')">
-            <div class="game-icon">🧩</div>
-            <h3>2048 Puzzle</h3>
-            <p>Merge & Win</p>
-            <span class="difficulty">⭐⭐⭐</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="lobby-footer">
-        <div class="featured-section">
-          <h4>🔥 Featured Event</h4>
-          <p>Spring Championship - Win Extra Rewards!</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Battle Royale Game -->
-    <div id="battleRoyaleScreen" class="screen">
-      <canvas id="battleRoyaleCanvas"></canvas>
-      <div class="game-hud">
-        <div class="hud-top-left">
-          <div class="minimap"><canvas id="minimapCanvas"></canvas></div>
-          <div class="zone-timer">Zone: <span id="zoneTime">60s</span></div>
-        </div>
-        <div class="hud-top-right">
-          <div class="players-left">Players: <span id="playersCount">100</span></div>
-          <div class="round-info">Wave: <span id="waveNumber">1</span></div>
-        </div>
-        <div class="hud-bottom">
-          <div class="health-bar-section">
-            <span>HP</span>
-            <div class="health-bar"><div class="health-fill" id="brHealth"></div></div>
-            <span id="healthNumber">100/100</span>
-          </div>
-          <div class="ammo-section">
-            <span id="ammo">30</span> / <span id="magazine">120</span>
-          </div>
-          <div class="score-section">
-            <span>Score: <strong id="brScore">0</strong></span>
-          </div>
-        </div>
-      </div>
-      <div class="game-controls">
-        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
-        <button class="game-btn" onclick="backToLobby()">EXIT</button>
-      </div>
-    </div>
-
-    <!-- Carrom Pool Game -->
-    <div id="carromScreen" class="screen">
-      <canvas id="carromCanvas"></canvas>
-      <div class="game-hud carrom-hud">
-        <div class="hud-info">
-          <div>Score: <span id="carromScore">0</span></div>
-          <div>Balls: <span id="ballsLeft">9</span></div>
-          <div>Fouls: <span id="fouls">0</span></div>
-        </div>
-      </div>
-      <div class="game-controls">
-        <button class="game-btn" onclick="resetCarrom()">RESET</button>
-        <button class="game-btn" onclick="backToLobby()">EXIT</button>
-      </div>
-    </div>
-
-    <!-- Racing Game -->
-    <div id="racingScreen" class="screen">
-      <canvas id="racingCanvas"></canvas>
-      <div class="game-hud racing-hud">
-        <div class="race-info">
-          <div class="position">Position: <span id="position">1/4</span></div>
-          <div class="speed">Speed: <span id="speed">0</span> km/h</div>
-          <div class="lap">Lap: <span id="lap">1/3</span></div>
-          <div class="time">Time: <span id="raceTime">0:00</span></div>
-        </div>
-      </div>
-      <div class="game-controls">
-        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
-        <button class="game-btn" onclick="backToLobby()">EXIT</button>
-      </div>
-    </div>
-
-    <!-- Snake Game -->
-    <div id="snakeScreen" class="screen">
-      <canvas id="snakeCanvas"></canvas>
-      <div class="game-hud snake-hud">
-        <div class="snake-info">
-          <div>Score: <span id="snakeScore">0</span></div>
-          <div>Level: <span id="snakeLevel">1</span></div>
-          <div>Best: <span id="snakeBest">0</span></div>
-        </div>
-      </div>
-      <div class="game-controls">
-        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
-        <button class="game-btn" onclick="backToLobby()">EXIT</button>
-      </div>
-    </div>
-
-    <!-- Flappy Bird Game -->
-    <div id="flappyScreen" class="screen">
-      <canvas id="flappyCanvas"></canvas>
-      <div class="game-hud flappy-hud">
-        <div class="flappy-info">
-          <div>Score: <span id="flappyScore">0</span></div>
-          <div>Best: <span id="flappyBest">0</span></div>
-        </div>
-      </div>
-      <div class="game-controls">
-        <button class="game-btn" onclick="pauseCurrentGame()">PAUSE</button>
-        <button class="game-btn" onclick="backToLobby()">EXIT</button>
-      </div>
-    </div>
-
-    <!-- 2048 Puzzle Game -->
-    <div id="puzzle2048Screen" class="screen">
-      <div class="puzzle-container">
-        <div class="puzzle-header">
-          <h2>2048</h2>
-          <div class="puzzle-stats">
-            <div class="stat">Score: <span id="puzzleScore">0</span></div>
-            <div class="stat">Best: <span id="puzzleBest">0</span></div>
-          </div>
-        </div>
-        <div class="puzzle-grid" id="puzzleGrid"></div>
-        <div class="puzzle-controls">
-          <button class="game-btn" onclick="resetPuzzle()">NEW GAME</button>
-          <button class="game-btn" onclick="backToLobby()">EXIT</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Profile Screen -->
-    <div id="profileScreen" class="screen">
-      <div class="profile-container">
-        <button class="close-btn" onclick="backToLobby()">✕</button>
-        <div class="profile-header">
-          <div class="avatar">👤</div>
-          <h2 id="profileName">Player Name</h2>
-          <p id="profileLevel">Level 1</p>
-        </div>
-        <div class="profile-stats">
-          <div class="stat-item">
-            <span>Total Wins</span>
-            <span id="profileWins">0</span>
-          </div>
-          <div class="stat-item">
-            <span>Total Games</span>
-            <span id="profileGames">0</span>
-          </div>
-          <div class="stat-item">
-            <span>Total Coins</span>
-            <span id="profileCoins">0</span>
-          </div>
-          <div class="stat-item">
-            <span>Play Time</span>
-            <span id="profileTime">0h</span>
-          </div>
-        </div>
-        <div class="achievements-section">
-          <h3>🏆 Achievements</h3>
-          <div class="achievements-grid">
-            <div class="achievement">
-              <span>🎯</span>
-              <p>First Blood</p>
+          <div class="stats-row">
+            <div class="mini-stat">
+              <span class="label">Threat Level</span>
+              <strong>SEV-7</strong>
             </div>
-            <div class="achievement">
-              <span>⚡</span>
-              <p>Speed Demon</p>
+            <div class="mini-stat">
+              <span class="label">Systems</span>
+              <strong>97%</strong>
             </div>
-            <div class="achievement">
-              <span>🎪</span>
-              <p>Combo Master</p>
+            <div class="mini-stat">
+              <span class="label">Operator</span>
+              <strong>Delta</strong>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="startGameBtn" class="primary-btn">Launch Mission</button>
+            <button id="leaderboardBtn" class="secondary-btn">Squad Leaderboard</button>
+            <button id="instructionsBtn" class="secondary-btn">Mission Brief</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="leaderboardScreen" class="screen">
+        <div class="panel-overlay">
+          <div class="modal-window compact-window">
+            <div class="modal-header">
+              <div>
+                <p class="eyebrow muted">SQUAD RECORDS</p>
+                <h2>Top Operators</h2>
+              </div>
+              <button class="close-btn" data-close="leaderboardScreen">✕</button>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="instructionsScreen" class="screen">
+        <div class="panel-overlay">
+          <div class="modal-window">
+            <div class="modal-header">
+              <div>
+                <p class="eyebrow muted">MISSION BRIEF</p>
+                <h2>Operator Manual</h2>
+              </div>
+              <button class="close-btn" data-close="instructionsScreen">✕</button>
+            </div>
+
+            <div class="brief-grid">
+              <div class="brief-card">
+                <h3>Mission Objective</h3>
+                <p>Stop malicious traffic before it reaches core infrastructure. Every breach degrades network integrity.</p>
+              </div>
+              <div class="brief-card">
+                <h3>Controls</h3>
+                <p>Move with WASD or arrow keys. Aim with the mouse. Fire with click or space bar. Pause with P.</p>
+              </div>
+              <div class="brief-card">
+                <h3>Threats</h3>
+                <p>Ransomware, botnets, DDoS traffic, phishing payloads, and rootkits escalate each wave.</p>
+              </div>
+              <div class="brief-card">
+                <h3>Powerups</h3>
+                <p>Repair kits restore health. Shield cells add temporary defense. Collect them when dropped by hostile nodes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameScreen" class="screen">
+        <div class="hud-topbar">
+          <div class="hud-group left-group">
+            <div class="hud-box">
+              <span class="label">Threats</span>
+              <strong id="threatCount">0</strong>
+            </div>
+            <div class="hud-box">
+              <span class="label">Wave</span>
+              <strong id="waveDisplay">1</strong>
+            </div>
+          </div>
+
+          <div class="hud-group right-group">
+            <div class="hud-box">
+              <span class="label">Score</span>
+              <strong id="scoreDisplay">0</strong>
+            </div>
+            <div class="hud-box">
+              <span class="label">Credits</span>
+              <strong id="creditsDisplay">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="health-bar-wrap">
+          <div class="health-labels">
+            <span>Integrity</span>
+            <span id="healthText">100%</span>
+          </div>
+          <div class="health-bar">
+            <div id="healthFill" class="health-fill"></div>
+          </div>
+        </div>
+
+        <canvas id="gameCanvas" width="960" height="600"></canvas>
+
+        <div class="action-panel">
+          <button class="tiny-btn" id="pauseBtn">Pause</button>
+          <button class="tiny-btn danger" id="quitBtn">Abort</button>
+        </div>
+      </div>
+
+      <div id="pauseScreen" class="screen">
+        <div class="panel-overlay">
+          <div class="modal-window compact-window center-window">
+            <p class="eyebrow muted">SYSTEM PAUSED</p>
+            <h2>Mission Control</h2>
+            <div class="pause-actions">
+              <button id="resumeBtn" class="primary-btn">Resume</button>
+              <button id="pauseMenuQuitBtn" class="secondary-btn">Return to Command</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameOverScreen" class="screen">
+        <div class="panel-overlay">
+          <div class="modal-window">
+            <p class="eyebrow danger">SYSTEM BREACHED</p>
+            <h2>Network Compromised</h2>
+
+            <div class="score-summary">
+              <div>
+                <span>Score</span>
+                <strong id="finalScore">0</strong>
+              </div>
+              <div>
+                <span>Wave</span>
+                <strong id="finalWave">1</strong>
+              </div>
+              <div>
+                <span>Threats Neutralized</span>
+                <strong id="finalKills">0</strong>
+              </div>
+            </div>
+
+            <div class="game-over-actions">
+              <button id="restartBtn" class="primary-btn">Retry Mission</button>
+              <button id="menuBtn" class="secondary-btn">Return to Command</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Settings Screen -->
-    <div id="settingsScreen" class="screen">
-      <div class="settings-container">
-        <button class="close-btn" onclick="backToLobby()">✕</button>
-        <h2>Settings</h2>
-        <div class="settings-group">
-          <label>Sound Volume</label>
-          <input type="range" min="0" max="100" value="70" id="volumeSlider">
-        </div>
-        <div class="settings-group">
-          <label>Brightness</label>
-          <input type="range" min="50" max="150" value="100" id="brightnessSlider">
-        </div>
-        <div class="settings-group">
-          <label>
-            <input type="checkbox" checked> Enable Notifications
-          </label>
-        </div>
-        <div class="settings-group">
-          <label>
-            <input type="checkbox"> Dark Mode
-          </label>
-        </div>
-        <button class="game-btn" onclick="backToLobby()">SAVE & CLOSE</button>
-      </div>
-    </div>
-
-    <!-- Pause Menu -->
-    <div id="pauseMenu" class="overlay-menu">
-      <div class="pause-panel">
-        <h2>PAUSED</h2>
-        <button class="game-btn" onclick="resumeCurrentGame()">RESUME</button>
-        <button class="game-btn" onclick="backToLobby()">EXIT TO LOBBY</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="game.js"></script>
-</body>
+    <script src="game.js"></script>
+  </body>
 </html>
