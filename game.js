@@ -3,6 +3,18 @@ const ctx = canvas.getContext('2d');
 const minimapCanvas = document.getElementById('minimapCanvas');
 const minimapCtx = minimapCanvas.getContext('2d');
 
+const hud = {
+  healthFill: document.getElementById('healthFill'),
+  healthValue: document.getElementById('healthValue'),
+  ammoValue: document.getElementById('ammoValue'),
+  ammoReserve: document.getElementById('ammoReserve'),
+  playersLeft: document.getElementById('playersLeft'),
+  zoneInfo: document.getElementById('zoneInfo'),
+  playersOnline: document.getElementById('playersOnline'),
+  winRate: document.getElementById('winRate'),
+  totalKills: document.getElementById('totalKills')
+};
+
 const state = {
   current: 'menu',
   width: window.innerWidth,
@@ -16,6 +28,10 @@ const state = {
   walls: [],
   isPointerDown: false,
   gameTime: 0,
+  lastFrame: 0,
+  maxParticles: 250,
+  backgroundCanvas: null,
+  spatialGrid: new Map(),
   zone: {
     x: 0,
     y: 0,
@@ -42,12 +58,43 @@ function resizeCanvas() {
   canvas.height = state.height;
   minimapCanvas.width = 150;
   minimapCanvas.height = 150;
+  buildBackgroundGrid();
+
   if (state.player) {
     state.player.x = clamp(state.player.x, 30, state.width - 30);
     state.player.y = clamp(state.player.y, 30, state.height - 30);
   }
+
   state.zone.x = state.width / 2;
   state.zone.y = state.height / 2;
+}
+
+function buildBackgroundGrid() {
+  const gridCanvas = document.createElement('canvas');
+  gridCanvas.width = state.width;
+  gridCanvas.height = state.height;
+
+  const g = gridCanvas.getContext('2d');
+  g.fillStyle = '#071824';
+  g.fillRect(0, 0, state.width, state.height);
+
+  for (let x = 0; x < state.width; x += 32) {
+    g.strokeStyle = 'rgba(0, 212, 255, 0.08)';
+    g.beginPath();
+    g.moveTo(x, 0);
+    g.lineTo(x, state.height);
+    g.stroke();
+  }
+
+  for (let y = 0; y < state.height; y += 32) {
+    g.strokeStyle = 'rgba(0, 212, 255, 0.08)';
+    g.beginPath();
+    g.moveTo(0, y);
+    g.lineTo(state.width, y);
+    g.stroke();
+  }
+
+  state.backgroundCanvas = gridCanvas;
 }
 
 function clamp(value, min, max) {
@@ -168,7 +215,8 @@ function createPlayer() {
 
 function spawnEnemy() {
   const side = Math.floor(Math.random() * 4);
-  let x = 0, y = 0;
+  let x = 0;
+  let y = 0;
 
   if (side === 0) {
     x = Math.random() * state.width;
@@ -224,6 +272,7 @@ function resetGame() {
     shrinkPerSecond: 1.8
   };
   state.isPointerDown = false;
+  state.spatialGrid.clear();
 
   for (let i = 0; i < 18; i++) {
     spawnEnemy();
@@ -236,6 +285,7 @@ function startGame() {
   state.current = 'playing';
   resetGame();
   state.stats.matches += 1;
+  state.lastFrame = 0;
   showScreen('gameScreen');
   cancelAnimationFrame(state.animationFrame);
   state.animationFrame = requestAnimationFrame(gameLoop);
@@ -251,6 +301,7 @@ function resumeGame() {
   if (state.current !== 'paused') return;
   state.current = 'playing';
   showScreen('gameScreen');
+  state.lastFrame = 0;
   cancelAnimationFrame(state.animationFrame);
   state.animationFrame = requestAnimationFrame(gameLoop);
 }
@@ -277,7 +328,6 @@ function useAbility() {
 }
 
 function toggleInventory() {
-  // Simple placeholder for inventory screen behavior
   if (state.current === 'playing') {
     state.player.reserveAmmo += 15;
     state.player.health = Math.min(state.player.maxHealth, state.player.health + 10);
@@ -316,6 +366,10 @@ function shoot() {
 }
 
 function createParticles(x, y, color, count) {
+  if (state.particles.length >= state.maxParticles) {
+    state.particles.shift();
+  }
+
   for (let i = 0; i < count; i++) {
     state.particles.push({
       x,
@@ -333,15 +387,15 @@ function updateHud() {
   if (!state.player) return;
 
   const healthPercent = (state.player.health / state.player.maxHealth) * 100;
-  document.getElementById('healthFill').style.width = `${healthPercent}%`;
-  document.getElementById('healthValue').textContent = Math.ceil(state.player.health);
-  document.getElementById('ammoValue').textContent = state.player.ammo;
-  document.getElementById('ammoReserve').textContent = state.player.reserveAmmo;
-  document.getElementById('playersLeft').textContent = state.enemies.length + 1;
-  document.getElementById('zoneInfo').textContent = state.zone.radius < 220 ? 'Final Circle' : 'Safe';
-  document.getElementById('playersOnline').textContent = '100';
-  document.getElementById('winRate').textContent = `${Math.min(99, Math.round((state.stats.wins / Math.max(1, state.stats.matches)) * 100))}%`;
-  document.getElementById('totalKills').textContent = state.stats.kills;
+  hud.healthFill.style.width = `${healthPercent}%`;
+  hud.healthValue.textContent = Math.ceil(state.player.health);
+  hud.ammoValue.textContent = state.player.ammo;
+  hud.ammoReserve.textContent = state.player.reserveAmmo;
+  hud.playersLeft.textContent = state.enemies.length + 1;
+  hud.zoneInfo.textContent = state.zone.radius < 220 ? 'Final Circle' : 'Safe';
+  hud.playersOnline.textContent = '100';
+  hud.winRate.textContent = `${Math.min(99, Math.round((state.stats.wins / Math.max(1, state.stats.matches)) * 100))}%`;
+  hud.totalKills.textContent = state.stats.kills;
 }
 
 function updatePlayer(delta) {
@@ -414,7 +468,48 @@ function updateEnemies(delta) {
   }
 }
 
+function rebuildSpatialGrid() {
+  state.spatialGrid.clear();
+
+  for (let i = 0; i < state.enemies.length; i++) {
+    const enemy = state.enemies[i];
+    const cellSize = 80;
+    const cellX = Math.floor(enemy.x / cellSize);
+    const cellY = Math.floor(enemy.y / cellSize);
+    const key = `${cellX},${cellY}`;
+
+    if (!state.spatialGrid.has(key)) {
+      state.spatialGrid.set(key, []);
+    }
+    state.spatialGrid.get(key).push(enemy);
+  }
+}
+
+function getNearbyEnemies(x, y, radius) {
+  const cellSize = 80;
+  const minCellX = Math.floor((x - radius) / cellSize);
+  const maxCellX = Math.floor((x + radius) / cellSize);
+  const minCellY = Math.floor((y - radius) / cellSize);
+  const maxCellY = Math.floor((y + radius) / cellSize);
+  const candidates = new Set();
+
+  for (let cx = minCellX; cx <= maxCellX; cx++) {
+    for (let cy = minCellY; cy <= maxCellY; cy++) {
+      const key = `${cx},${cy}`;
+      const bucket = state.spatialGrid.get(key);
+      if (!bucket) continue;
+      for (let i = 0; i < bucket.length; i++) {
+        candidates.add(bucket[i]);
+      }
+    }
+  }
+
+  return Array.from(candidates);
+}
+
 function updateBullets(delta) {
+  rebuildSpatialGrid();
+
   for (let i = state.bullets.length - 1; i >= 0; i--) {
     const bullet = state.bullets[i];
     bullet.x += bullet.vx * delta * 60;
@@ -422,20 +517,27 @@ function updateBullets(delta) {
     bullet.life -= delta * 60;
 
     if (bullet.owner === 'player') {
-      for (let j = state.enemies.length - 1; j >= 0; j--) {
-        const enemy = state.enemies[j];
+      const targets = getNearbyEnemies(bullet.x, bullet.y, bullet.radius + 24);
+      let hit = false;
+
+      for (let j = 0; j < targets.length; j++) {
+        const enemy = targets[j];
         if (distance(bullet, enemy) < bullet.radius + enemy.radius) {
           enemy.health -= bullet.damage;
           createParticles(bullet.x, bullet.y, '#7ef9ff', 8);
           state.bullets.splice(i, 1);
+          hit = true;
           break;
         }
       }
+
+      if (hit) continue;
     } else {
       if (distance(bullet, state.player) < bullet.radius + state.player.radius) {
         state.player.health -= bullet.damage;
         createParticles(bullet.x, bullet.y, '#ff5d5d', 8);
         state.bullets.splice(i, 1);
+        continue;
       }
     }
 
@@ -512,23 +614,13 @@ function updateGame(delta) {
 }
 
 function drawBackground() {
-  ctx.fillStyle = '#071824';
-  ctx.fillRect(0, 0, state.width, state.height);
+  ctx.clearRect(0, 0, state.width, state.height);
 
-  for (let x = 0; x < state.width; x += 32) {
-    ctx.strokeStyle = 'rgba(0, 212, 255, 0.08)';
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, state.height);
-    ctx.stroke();
-  }
-
-  for (let y = 0; y < state.height; y += 32) {
-    ctx.strokeStyle = 'rgba(0, 212, 255, 0.08)';
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(state.width, y);
-    ctx.stroke();
+  if (state.backgroundCanvas) {
+    ctx.drawImage(state.backgroundCanvas, 0, 0, state.width, state.height);
+  } else {
+    ctx.fillStyle = '#071824';
+    ctx.fillRect(0, 0, state.width, state.height);
   }
 
   ctx.strokeStyle = 'rgba(255, 110, 64, 0.9)';
@@ -619,17 +711,17 @@ function drawMinimap() {
   minimapCtx.fill();
 
   minimapCtx.fillStyle = '#ff8a65';
+  minimapCtx.beginPath();
   state.enemies.forEach((enemy) => {
     const ex = (enemy.x / state.width) * 150;
     const ey = (enemy.y / state.height) * 150;
-    minimapCtx.beginPath();
+    minimapCtx.moveTo(ex + 3, ey);
     minimapCtx.arc(ex, ey, 3, 0, Math.PI * 2);
-    minimapCtx.fill();
   });
+  minimapCtx.fill();
 }
 
 function drawGame() {
-  ctx.clearRect(0, 0, state.width, state.height);
   drawBackground();
   drawPickups();
   drawBullets();
@@ -641,7 +733,14 @@ function drawGame() {
 
 function gameLoop(timestamp) {
   if (state.current !== 'playing') return;
-  const delta = 1 / 60;
+
+  if (!state.lastFrame) {
+    state.lastFrame = timestamp;
+  }
+
+  const delta = Math.min((timestamp - state.lastFrame) / 1000, 0.033);
+  state.lastFrame = timestamp;
+
   updateGame(delta);
   drawGame();
   state.animationFrame = requestAnimationFrame(gameLoop);
