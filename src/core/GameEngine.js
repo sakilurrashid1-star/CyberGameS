@@ -17,6 +17,8 @@ import { SettingsModal } from '../ui/SettingsModal.js';
 import { threatProfiles, defaultThreatCatalog } from '../data/threatProfiles.js';
 import { equipmentCatalog } from '../data/equipmentStats.js';
 import { campaignLevels } from '../data/levelDescriptors.js';
+import Camera from '../rendering/Camera.js';
+import CombatFX from '../rendering/CombatFX.js';
 
 export class GameEngine {
   constructor(rootElement, canvasId = 'gameCanvas') {
@@ -32,12 +34,14 @@ export class GameEngine {
     this.settings = new SettingsModal();
     this.tickLoop = new TickLoop((dt) => this.update(dt), () => this.render());
 
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    // High-DPI / Retina support
+    this.dpr = window.devicePixelRatio || 1;
+    this._resizeCanvas();
+    window.addEventListener('resize', () => this._resizeCanvas());
 
     this.config = {
       keys: {},
-      mouse: { x: this.width / 2, y: this.height / 2 },
+      mouse: { x: this.logicalWidth / 2, y: this.logicalHeight / 2 },
       score: 0,
       credits: 0,
       threatIdCounter: 1,
@@ -57,6 +61,8 @@ export class GameEngine {
     this.threatModel = new ThreatModel({ profiles: threatProfiles, catalog: defaultThreatCatalog });
     this.combatSystem = new CombatSystem();
     this.particleSystem = new ParticleSystem(this.ctx);
+    this.camera = new Camera(this.canvas, this.logicalWidth, this.logicalHeight);
+    this.combatFX = new CombatFX(this);
     this.activeCampaign = null;
 
     this.bindEvents();
@@ -65,6 +71,24 @@ export class GameEngine {
     this.attachConsoleCommands();
     this.hud.renderMainMenu();
     this.render();
+  }
+
+  _resizeCanvas() {
+    // Use CSS size as logical size, backing store scaled by DPR
+    const rect = this.canvas.getBoundingClientRect();
+    this.logicalWidth = Math.max(320, Math.floor(rect.width));
+    this.logicalHeight = Math.max(240, Math.floor(rect.height));
+    this.canvas.width = Math.floor(this.logicalWidth * this.dpr);
+    this.canvas.height = Math.floor(this.logicalHeight * this.dpr);
+    this.canvas.style.width = `${this.logicalWidth}px`;
+    this.canvas.style.height = `${this.logicalHeight}px`;
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+    // keep legacy properties for compatibility
+    this.width = this.logicalWidth;
+    this.height = this.logicalHeight;
+
+    if (this.camera) this.camera.resize(this.logicalWidth, this.logicalHeight);
   }
 
   initializeStarfield() {
@@ -176,8 +200,9 @@ export class GameEngine {
 
     this.canvas.addEventListener('mousemove', (event) => {
       const rect = this.canvas.getBoundingClientRect();
-      this.config.mouse.x = ((event.clientX - rect.left) / rect.width) * this.width;
-      this.config.mouse.y = ((event.clientY - rect.top) / rect.height) * this.height;
+      // map to logical coordinates (CSS pixels)
+      this.config.mouse.x = ((event.clientX - rect.left) / rect.width) * this.logicalWidth;
+      this.config.mouse.y = ((event.clientY - rect.top) / rect.height) * this.logicalHeight;
     });
 
     this.canvas.addEventListener('mousedown', () => {
@@ -291,7 +316,10 @@ export class GameEngine {
     this.projectiles.push(projectile);
     this.player.fireCooldown = this.player.fireRate;
     this.audio.playTone(520, 0.06, 'square', 0.04);
-    this.particles.push(...this.particleSystem.emitBurst(this.player.x + 10, this.player.y, '#67e8f9', 8, 110));
+    this.particles.push(...this.particleSystem.emitBurst(this.player.x + 10, this.player.y, '#67e8f9', 8, 110, { trail: true }));
+
+    // combat FX: recoil + muzzle
+    this.combatFX.onFire();
   }
 
   spawnPickup(x, y, kind = 'repair') {
@@ -301,11 +329,16 @@ export class GameEngine {
   update(dt) {
     if (this.state.state !== 'playing' || !this.player) return;
 
+    // consume hitstop / micro-pause from combat fx
+    if (this.combatFX && this.combatFX.consumePause(dt)) return;
+
     this.player.update(dt, this.config.keys, this.width, this.height);
     this.updateThreats(dt);
     this.updateProjectiles(dt);
     this.updatePickups(dt);
-    this.particleSystem.update(dt, this.particles);
+    this.particleSystem.update(dt, this.particles, this.width, this.height);
+    this.combatFX.update(dt);
+    this.camera.update(dt, this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, this.config.mouse.x, this.config.mouse.y);
     this.waveManager.update(dt, this);
     this.hud.update({
       score: this.config.score,
@@ -344,6 +377,11 @@ export class GameEngine {
         const damage = threat.damage * 0.9;
         this.player.applyDamage(damage);
         this.audio.playTone(80, 0.14, 'sawtooth', 0.05);
+
+        // camera trauma and hit feedback for player damage
+        this.camera.addTrauma(Math.min(0.9, damage / 60));
+        this.combatFX.onPlayerHit(damage, threat.x, threat.y);
+
         this.threats.splice(i, 1);
       }
     }
@@ -367,8 +405,13 @@ export class GameEngine {
 
         if (dist <= projectile.radius + threat.radius) {
           threat.applyDamage(projectile.damage);
+
+          // combat feedback
+          this.camera.addTrauma(Math.min(1, projectile.damage / 80));
+          this.combatFX.onHit({ x: projectile.x, y: projectile.y, damage: projectile.damage, target: threat });
+
           this.projectiles.splice(i, 1);
-          this.particles.push(...this.particleSystem.emitBurst(projectile.x, projectile.y, '#67e8f9', 10, 140));
+          this.particles.push(...this.particleSystem.emitBurst(projectile.x, projectile.y, '#67e8f9', 10, 140, { trail: true, sparks: true }));
           break;
         }
       }
@@ -401,13 +444,26 @@ export class GameEngine {
   }
 
   render() {
-    this.ctx.clearRect(0, 0, this.width, this.height);
+    // clear screen (logical pixels)
+    this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
+
+    // background and UI elements that are screen-space
     this.drawBackground();
+
+    // world-space drawing goes within camera transform
+    this.ctx.save();
+    this.camera.applyToContext(this.ctx);
+
     this.drawPickups();
     this.drawProjectiles();
     this.drawThreats();
     this.drawPlayer();
     this.particleSystem.render(this.ctx, this.particles);
+
+    this.ctx.restore();
+
+    // combat FX overlays (hit flash, damage numbers, etc.) and HUD crosshair
+    this.combatFX.render(this.ctx);
     this.drawCrosshair();
   }
 
@@ -448,7 +504,11 @@ export class GameEngine {
 
     const p = this.player;
     this.ctx.save();
-    this.ctx.translate(p.x, p.y);
+
+    // apply recoil offset from combatFX to player only
+    const recoil = this.combatFX ? this.combatFX.recoilOffset : { x: 0, y: 0, rot: 0 };
+    this.ctx.translate(p.x + recoil.x, p.y + recoil.y);
+    if (recoil.rot) this.ctx.rotate(recoil.rot);
 
     if (p.shield > 0) {
       this.ctx.strokeStyle = 'rgba(103, 232, 249, 0.9)';
