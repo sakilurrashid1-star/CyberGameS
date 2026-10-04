@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div id="app" class="app-shell">
       <div id="mainMenu" class="screen active">
         <div class="backdrop-grid"></div>
         <div class="menu-panel">
@@ -50,7 +50,6 @@
               </div>
               <button class="close-btn" data-close="leaderboardScreen">✕</button>
             </div>
-
             <div class="leaderboard-list" id="leaderboardList"></div>
           </div>
         </div>
@@ -66,7 +65,6 @@
               </div>
               <button class="close-btn" data-close="instructionsScreen">✕</button>
             </div>
-
             <div class="brief-grid">
               <div class="brief-card">
                 <h3>Mission Objective</h3>
@@ -74,15 +72,15 @@
               </div>
               <div class="brief-card">
                 <h3>Controls</h3>
-                <p>Move with WASD or arrow keys. Aim with the mouse. Fire with click or space bar. Pause with P.</p>
+                <p>Move with WASD or arrow keys. Aim with the mouse. Fire with click or space bar. Pause with P. Toggle CLI with ~.</p>
               </div>
               <div class="brief-card">
                 <h3>Threats</h3>
-                <p>Ransomware, botnets, DDoS traffic, phishing payloads, and rootkits escalate each wave.</p>
+                <p>Ransomware, botnets, SQL injection probes, APTs, and zero-day exploit chains escalate each wave.</p>
               </div>
               <div class="brief-card">
-                <h3>Powerups</h3>
-                <p>Repair kits restore health. Shield cells add temporary defense. Collect them when dropped by hostile nodes.</p>
+                <h3>Defenses</h3>
+                <p>Deploy shields, analyze traffic, patch systems, and isolate compromised subnets using CLI controls.</p>
               </div>
             </div>
           </div>
@@ -150,7 +148,6 @@
           <div class="modal-window">
             <p class="eyebrow danger">SYSTEM BREACHED</p>
             <h2>Network Compromised</h2>
-
             <div class="score-summary">
               <div>
                 <span>Score</span>
@@ -165,7 +162,6 @@
                 <strong id="finalKills">0</strong>
               </div>
             </div>
-
             <div class="game-over-actions">
               <button id="restartBtn" class="primary-btn">Retry Mission</button>
               <button id="menuBtn" class="secondary-btn">Return to Command</button>
@@ -175,6 +171,6 @@
       </div>
     </div>
 
-    <script src="game.js"></script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
