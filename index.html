@@ -671,7 +671,7 @@
   </main>
 
   <!-- Interactive Training Mission Modal -->
-  <div id="trainingModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+  <div id="trainingModal" onclick="if(event.target === this) closeTrainingModal()" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
     <div class="glass-card border-cyan-500/40 max-w-2xl w-full p-5 sm:p-7 relative max-h-[90vh] overflow-y-auto space-y-5">
       <div class="flex items-start justify-between gap-4">
         <div>
@@ -715,7 +715,7 @@
   </div>
 
   <!-- Public Operative Dossier Card (When Searching a Player) -->
-  <div id="dossierModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+  <div id="dossierModal" onclick="if(event.target === this) closeDossierModal()" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
     <div class="glass-card border-cyan-500/40 max-w-md w-full p-6 text-center space-y-4">
       <div class="flex justify-between items-center">
         <span class="text-[10px] font-mono-cyber text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded">OPERATIVE DOSSIER</span>
@@ -750,8 +750,8 @@
   </div>
 
   <!-- Auth Modal (Distinct Dedicated Register vs Login Tabs) -->
-  <div id="authModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="glass-card border-cyan-500/40 max-w-lg w-full p-5 sm:p-6 space-y-4 my-auto max-h-[92vh] overflow-y-auto">
+  <div id="authModal" onclick="if(event.target === this) closeAuthModal()" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="glass-card border-cyan-500/40 max-w-lg w-full p-5 sm:p-6 space-y-4 my-auto max-h-[92vh] overflow-y-auto relative"><button onclick="closeAuthModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm z-10" title="Close">✕</button>
       
       <!-- Modal Header -->
       <div class="text-center space-y-1">
@@ -874,7 +874,7 @@
   </div>
 
   <!-- Cyber Badge Export Canvas Modal -->
-  <div id="badgeModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+  <div id="badgeModal" onclick="if(event.target === this) closeBadgeModal()" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
     <div class="glass-card border-emerald-500/40 max-w-lg w-full p-6 text-center space-y-4">
       <div class="flex items-center justify-between">
         <h4 class="font-orbitron font-bold text-sm text-emerald-400">OFFICIAL CYBER OPERATIVE CREDENTIAL</h4>

@@ -385,7 +385,7 @@ const TRAINING_MISSIONS = [
   {
     id: "l3m1", level: 3, levelName: "LEVEL 3: WEB EXPLOITS", icon: "💉", title: "এসকিউএল ইনজেকশন (SQLi)",
     subtitle: "Database Attack Prevention", xp: 60, difficulty: "HARD", category: "Web Exploitation",
-    scenario: "> VULNERABLE LOGIN QUERY:\n> SELECT * FROM users WHERE user = '" + input + "' AND pass = '" + pass + "'\n> Attacker Input: ' OR '1'='1' --",
+    scenario: "> VULNERABLE LOGIN QUERY:\n> SELECT * FROM users WHERE user = '$USER_INPUT' AND pass = '$PASS_INPUT'\n> Attacker Input: ' OR '1'='1' --",
     question: "' OR '1'='1' -- ইনপুট দিলে কেন পাসওয়ার্ড ছাড়াই অ্যাডমিন অ্যাকাউন্টে লগইন হয়ে যায়?",
     answers: [
       "ডাটাবেজ পাসওয়ার্ড পরিবর্তন করে ফেলে",
@@ -1930,36 +1930,85 @@ function setupPwaPrompt() {
 // ============ MATRIX RAIN CANVAS ============
 function initMatrixCanvas() {
   const canvas = document.getElementById('matrix-canvas');
-  if (!canvas) return;
+  if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
   function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 800;
+    canvas.height = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight : 600;
   }
   resize();
-  window.addEventListener('resize', resize);
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('resize', resize);
+  }
 
   const chars = '01#@%&*ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const fontSize = 14;
-  let cols = Math.floor(canvas.width / fontSize);
+  const canvasW = canvas.width || 800;
+  let cols = Math.max(1, Math.floor(canvasW / fontSize));
   let drops = Array(cols).fill(1);
 
   setInterval(() => {
-    ctx.fillStyle = 'rgba(3, 7, 18, 0.06)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.fillStyle = 'rgba(3, 7, 18, 0.06)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = '#06b6d4';
-    ctx.font = `${fontSize}px "Fira Code", monospace`;
+      ctx.fillStyle = '#06b6d4';
+      ctx.font = `${fontSize}px "Fira Code", monospace`;
 
-    for (let i = 0; i < drops.length; i++) {
-      const text = chars[Math.floor(Math.random() * chars.length)];
-      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
 
-      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-        drops[i] = 0;
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
       }
-      drops[i]++;
-    }
+    } catch (e) {}
   }, 45);
+}
+
+
+// Explicit Window Exports for 100% Reliable HTML onclick Binding
+if (typeof window !== 'undefined') {
+  window.toggleAudio = toggleAudio;
+  window.openProfileTab = openProfileTab;
+  window.switchMainTab = switchMainTab;
+  window.instantUnlockCombatLicense = instantUnlockCombatLicense;
+  window.startQuickMatch = startQuickMatch;
+  window.createPrivateRoom = createPrivateRoom;
+  window.joinPrivateRoom = joinPrivateRoom;
+  window.sendQuickTaunt = sendQuickTaunt;
+  window.handleSendBattleChat = handleSendBattleChat;
+  window.submitCombatMove = submitCombatMove;
+  window.returnToArenaLobby = returnToArenaLobby;
+  window.openAuthModal = openAuthModal;
+  window.closeAuthModal = closeAuthModal;
+  window.continueAsGuest = continueAsGuest;
+  window.switchAuthTab = switchAuthTab;
+  window.selectAuthGender = selectAuthGender;
+  window.handleAuthPhotoUploaded = handleAuthPhotoUploaded;
+  window.chooseAuthAvatar = chooseAuthAvatar;
+  window.handleRegisterSubmit = handleRegisterSubmit;
+  window.handleLoginSubmit = handleLoginSubmit;
+  window.triggerProfilePhotoPicker = triggerProfilePhotoPicker;
+  window.handleProfilePhotoSelected = handleProfilePhotoSelected;
+  window.toggleUserGender = toggleUserGender;
+  window.handlePlayerSearch = handlePlayerSearch;
+  window.openDossierModal = openDossierModal;
+  window.closeDossierModal = closeDossierModal;
+  window.challengeDossierPlayer = challengeDossierPlayer;
+  window.toggleLeaderboardType = toggleLeaderboardType;
+  window.fetchTrophyLeaderboard = fetchTrophyLeaderboard;
+  window.generateHackerBadge = generateHackerBadge;
+  window.closeBadgeModal = closeBadgeModal;
+  window.downloadIdBadge = downloadIdBadge;
+  window.shareIdBadge = shareIdBadge;
+  window.openTrainingMission = openTrainingMission;
+  window.closeTrainingModal = closeTrainingModal;
+  window.submitTrainingAnswer = submitTrainingAnswer;
+  window.useTrainingHint = useTrainingHint;
+  window.proceedNextTrainingNode = proceedNextTrainingNode;
 }
