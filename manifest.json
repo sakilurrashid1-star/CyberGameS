@@ -1,0 +1,24 @@
+{
+  "name": "CyberGameS — Multiplayer Cyber Warfare Arena",
+  "short_name": "CyberGameS",
+  "description": "Gamified Cybersecurity Learning & 1v1 Live Duels",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/logo-square.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/logo-square.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

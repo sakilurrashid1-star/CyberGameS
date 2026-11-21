@@ -1,0 +1,41 @@
+[
+  {
+    "id": "a5dff609-7695-4b86-88c3-2cf4251d6282",
+    "username": "Sakilur_Leader",
+    "pinHash": "158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab",
+    "gender": "male",
+    "avatar": "👑",
+    "division": "Dhaka",
+    "level": 1,
+    "level4Completed": true,
+    "xp": 500,
+    "trophies": 160,
+    "rank": "Exploit Hunter",
+    "completedMissions": [
+      "l1m1", "l1m2", "l1m3", "l1m4", "l1m5",
+      "l2m1", "l2m2", "l2m3", "l2m4", "l2m5",
+      "l3m1", "l3m2", "l3m3", "l3m4", "l3m5"
+    ],
+    "battles": {
+      "total": 2,
+      "wins": 2,
+      "losses": 0,
+      "winStreak": 2,
+      "highestTrophies": 160,
+      "matchHistory": [
+        {
+          "opponent": "ShadowHunter_AI",
+          "outcome": "WIN",
+          "trophiesChanged": 30,
+          "timestamp": "2026-11-20T19:30:00.000Z"
+        }
+      ]
+    },
+    "badges": [
+      "recruit_2026",
+      "combat_license"
+    ],
+    "createdAt": "2026-11-20T19:16:00.742Z",
+    "lastActiveAt": "2026-11-20T19:35:00.000Z"
+  }
+]

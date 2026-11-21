@@ -1,0 +1,27 @@
+{
+  "name": "cybergames",
+  "version": "2.0.0",
+  "description": "CyberGameS — Bangladesh's Premier Gamified Cybersecurity Learning & 1v1 Multiplayer Warfare Arena",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "cybersecurity",
+    "cybergame",
+    "gamification",
+    "multiplayer",
+    "1v1",
+    "bangladesh",
+    "infosec",
+    "zero-trust"
+  ],
+  "author": "Alkamah Sakilur Rashid <sakilurrashid1@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

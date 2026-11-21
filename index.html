@@ -1,176 +1,902 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cyber Defense Command</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div id="app" class="app-shell">
-      <div id="mainMenu" class="screen active">
-        <div class="backdrop-grid"></div>
-        <div class="menu-panel">
-          <div class="brand-block">
-            <p class="eyebrow">NATIONAL CYBER DEFENSE GRID</p>
-            <h1>Cyber Defense <span>Command</span></h1>
-            <p class="tagline">Guard the network, intercept threats, and stabilize critical systems.</p>
-          </div>
+<html lang="bn" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CyberGameS — SentinelX Autonomous Multiplayer Cyber Warfare Arena</title>
+  
+  <!-- PWA & Mobile Web App Meta -->
+  <meta name="theme-color" content="#030712">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/jpeg" href="assets/logo-square.jpg">
 
-          <div class="stats-row">
-            <div class="mini-stat">
-              <span class="label">Threat Level</span>
-              <strong>SEV-7</strong>
-            </div>
-            <div class="mini-stat">
-              <span class="label">Systems</span>
-              <strong>97%</strong>
-            </div>
-            <div class="mini-stat">
-              <span class="label">Operator</span>
-              <strong>Delta</strong>
-            </div>
-          </div>
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Confetti Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
-          <div class="actions">
-            <button id="startGameBtn" class="primary-btn">Launch Mission</button>
-            <button id="leaderboardBtn" class="secondary-btn">Squad Leaderboard</button>
-            <button id="instructionsBtn" class="secondary-btn">Mission Brief</button>
-          </div>
-        </div>
-      </div>
+  <style>
+    :root {
+      --neon-cyan: #06b6d4;
+      --neon-pink: #ec4899;
+      --neon-emerald: #10b981;
+      --neon-rose: #f43f5e;
+      --neon-amber: #f59e0b;
+    }
+    body {
+      background-color: #030712;
+      color: #e2e8f0;
+      font-family: 'Rajdhani', sans-serif;
+      touch-action: manipulation;
+    }
+    .font-orbitron { font-family: 'Orbitron', monospace; }
+    .font-mono-cyber { font-family: 'Fira Code', monospace; }
 
-      <div id="leaderboardScreen" class="screen">
-        <div class="panel-overlay">
-          <div class="modal-window compact-window">
-            <div class="modal-header">
-              <div>
-                <p class="eyebrow muted">SQUAD RECORDS</p>
-                <h2>Top Operators</h2>
-              </div>
-              <button class="close-btn" data-close="leaderboardScreen">✕</button>
-            </div>
-            <div class="leaderboard-list" id="leaderboardList"></div>
-          </div>
-        </div>
-      </div>
+    /* Matrix Canvas Background */
+    #matrix-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+    }
 
-      <div id="instructionsScreen" class="screen">
-        <div class="panel-overlay">
-          <div class="modal-window">
-            <div class="modal-header">
-              <div>
-                <p class="eyebrow muted">MISSION BRIEF</p>
-                <h2>Operator Manual</h2>
-              </div>
-              <button class="close-btn" data-close="instructionsScreen">✕</button>
-            </div>
-            <div class="brief-grid">
-              <div class="brief-card">
-                <h3>Mission Objective</h3>
-                <p>Stop malicious traffic before it reaches core infrastructure. Every breach degrades network integrity.</p>
-              </div>
-              <div class="brief-card">
-                <h3>Controls</h3>
-                <p>Move with WASD or arrow keys. Aim with the mouse. Fire with click or space bar. Pause with P. Toggle CLI with ~.</p>
-              </div>
-              <div class="brief-card">
-                <h3>Threats</h3>
-                <p>Ransomware, botnets, SQL injection probes, APTs, and zero-day exploit chains escalate each wave.</p>
-              </div>
-              <div class="brief-card">
-                <h3>Defenses</h3>
-                <p>Deploy shields, analyze traffic, patch systems, and isolate compromised subnets using CLI controls.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    /* Glassmorphism Cards */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 1rem;
+    }
+    .glass-card-hover {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card-hover:hover {
+      transform: translateY(-2px);
+      border-color: rgba(6, 182, 212, 0.5);
+      box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.25);
+    }
 
-      <div id="gameScreen" class="screen">
-        <div class="hud-topbar">
-          <div class="hud-group left-group">
-            <div class="hud-box">
-              <span class="label">Threats</span>
-              <strong id="threatCount">0</strong>
-            </div>
-            <div class="hud-box">
-              <span class="label">Wave</span>
-              <strong id="waveDisplay">1</strong>
-            </div>
-          </div>
+    /* Laser Shot Animations */
+    .laser-strike {
+      position: absolute;
+      height: 6px;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #06b6d4, #10b981, #f43f5e);
+      box-shadow: 0 0 15px #06b6d4;
+      animation: shootLaser 0.5s ease-out forwards;
+      z-index: 30;
+    }
+    @keyframes shootLaser {
+      0% { width: 0%; opacity: 1; }
+      50% { width: 100%; opacity: 1; }
+      100% { width: 100%; opacity: 0; }
+    }
 
-          <div class="hud-group right-group">
-            <div class="hud-box">
-              <span class="label">Score</span>
-              <strong id="scoreDisplay">0</strong>
-            </div>
-            <div class="hud-box">
-              <span class="label">Credits</span>
-              <strong id="creditsDisplay">0</strong>
-            </div>
-          </div>
-        </div>
+    /* Floating Damage Text */
+    .damage-fly {
+      position: absolute;
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: 22px;
+      animation: floatUpFade 1.2s ease-out forwards;
+      pointer-events: none;
+      z-index: 40;
+    }
+    @keyframes floatUpFade {
+      0% { opacity: 1; transform: translateY(0) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
+    }
 
-        <div class="health-bar-wrap">
-          <div class="health-labels">
-            <span>Integrity</span>
-            <span id="healthText">100%</span>
-          </div>
-          <div class="health-bar">
-            <div id="healthFill" class="health-fill"></div>
-          </div>
-        </div>
+    /* Choice Buttons */
+    .battle-choice {
+      transition: all 0.2s ease;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(51,65,85,0.7);
+    }
+    .battle-choice:hover:not(:disabled) {
+      border-color: #06b6d4;
+      background: rgba(6,182,212,0.12);
+      transform: translateY(-2px);
+    }
 
-        <canvas id="gameCanvas" width="960" height="600"></canvas>
+    /* Duolingo Journey Pathway Nodes */
+    .node-track {
+      position: relative;
+    }
+    .node-track::before {
+      content: '';
+      position: absolute;
+      top: 30px; bottom: 30px; left: 50%;
+      width: 4px;
+      transform: translateX(-50%);
+      background: linear-gradient(to bottom, #06b6d4, #8b5cf6, #ef4444, #f59e0b, #10b981);
+      opacity: 0.35;
+      z-index: 1;
+    }
+    .journey-node {
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .journey-node:active { transform: scale(0.92); }
 
-        <div class="action-panel">
-          <button class="tiny-btn" id="pauseBtn">Pause</button>
-          <button class="tiny-btn danger" id="quitBtn">Abort</button>
-        </div>
-      </div>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #030712; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
 
-      <div id="pauseScreen" class="screen">
-        <div class="panel-overlay">
-          <div class="modal-window compact-window center-window">
-            <p class="eyebrow muted">SYSTEM PAUSED</p>
-            <h2>Mission Control</h2>
-            <div class="pause-actions">
-              <button id="resumeBtn" class="primary-btn">Resume</button>
-              <button id="pauseMenuQuitBtn" class="secondary-btn">Return to Command</button>
-            </div>
-          </div>
-        </div>
-      </div>
+  <!-- Matrix Background Canvas -->
+  <canvas id="matrix-canvas"></canvas>
 
-      <div id="gameOverScreen" class="screen">
-        <div class="panel-overlay">
-          <div class="modal-window">
-            <p class="eyebrow danger">SYSTEM BREACHED</p>
-            <h2>Network Compromised</h2>
-            <div class="score-summary">
-              <div>
-                <span>Score</span>
-                <strong id="finalScore">0</strong>
-              </div>
-              <div>
-                <span>Wave</span>
-                <strong id="finalWave">1</strong>
-              </div>
-              <div>
-                <span>Threats Neutralized</span>
-                <strong id="finalKills">0</strong>
-              </div>
-            </div>
-            <div class="game-over-actions">
-              <button id="restartBtn" class="primary-btn">Retry Mission</button>
-              <button id="menuBtn" class="secondary-btn">Return to Command</button>
-            </div>
-          </div>
-        </div>
+  <!-- PWA Install Ribbon -->
+  <div id="pwa-install-bar" class="hidden relative z-50 bg-gradient-to-r from-slate-900 to-cyan-950 border-b border-cyan-500/40 px-4 py-2 flex items-center justify-between text-xs font-mono-cyber">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">📲</span>
+      <div>
+        <span class="font-bold text-cyan-300">Install CyberGameS App</span>
+        <span class="text-slate-400 block text-[10px]">Play full-screen 1v1 live duels with native speed</span>
       </div>
     </div>
+    <div class="flex items-center gap-2">
+      <button id="pwa-install-btn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-md">
+        Install
+      </button>
+      <button id="pwa-dismiss-btn" class="text-slate-400 hover:text-slate-200 px-2 text-sm">✕</button>
+    </div>
+  </div>
 
-    <script type="module" src="./src/main.js"></script>
-  </body>
+  <!-- Main Top Navigation & HUD -->
+  <header class="relative z-40 border-b border-slate-800/80 bg-[#030712]/95 backdrop-blur-md sticky top-0 px-3 sm:px-6 py-2.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      
+      <!-- Brand & Home link -->
+      <a href="./" class="flex items-center gap-2.5 group" title="Return to SentinelX Defense SOC">
+        <img src="assets/logo-square.jpg" alt="SentinelX" class="h-8 w-8 rounded-lg border border-cyan-500/40 shadow-sm shadow-cyan-500/20 group-hover:border-cyan-400 transition-all">
+        <div class="hidden sm:block text-left">
+          <span class="font-orbitron font-extrabold text-sm tracking-wide text-white block leading-none">CYBER<span class="text-cyan-400">GAMES</span></span>
+          <span class="text-[9px] font-mono-cyber text-slate-500 leading-none">MULTIPLAYER ARENA</span>
+        </div>
+      </a>
+
+      <!-- Live Player Search Input with Instant Dossier Dropdown -->
+      <div class="relative flex-1 max-w-xs hidden md:block">
+        <div class="flex items-center bg-slate-900 border border-slate-800 focus-within:border-cyan-500 rounded-xl px-3 py-1.5 text-xs font-mono-cyber">
+          <span class="text-slate-500 mr-2">🔍</span>
+          <input id="playerSearchInput" oninput="handlePlayerSearch(this.value)" type="text" placeholder="Search player (e.g. Nafi, Ayesha)..." class="w-full bg-transparent border-none outline-none text-cyan-300 placeholder-slate-600">
+        </div>
+        <!-- Search Results Dropdown -->
+        <div id="searchResultsDropdown" class="hidden absolute top-full mt-1.5 inset-x-0 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl p-2 space-y-1 z-50 max-h-60 overflow-y-auto font-mono-cyber text-xs">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Right HUD Action Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Audio Synth Toggle -->
+        <button onclick="toggleAudio()" class="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-slate-400 hover:text-cyan-400 transition-all text-xs" title="Toggle 8-bit Audio">
+          <span id="soundIcon">🔊</span>
+        </button>
+
+        <!-- Player Profile / Auth Pill -->
+        <div id="userProfilePill" onclick="openProfileTab()" class="cursor-pointer flex items-center gap-2 bg-gradient-to-r from-slate-900 to-slate-950 border border-cyan-500/30 hover:border-cyan-400 px-3 py-1.5 rounded-xl transition-all shadow-sm">
+          <div id="hudAvatarContainer" class="w-8 h-8 rounded-full border border-cyan-400/50 flex items-center justify-center overflow-hidden bg-slate-800 text-base">
+            <span id="hudAvatar">🔰</span>
+          </div>
+          <div class="text-left">
+            <div class="flex items-center gap-1.5">
+              <span id="hudUsername" class="font-mono-cyber font-bold text-xs text-white truncate max-w-[90px] sm:max-w-[120px]">Login</span>
+              <span id="hudGenderBadge" class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">♂️</span>
+              <span id="hudLicenseBadge" class="text-[8px] font-orbitron px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">LVL 1</span>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-mono-cyber text-slate-400">
+              <span class="text-amber-400 font-bold">🏆 <span id="hudTrophies">100</span></span>
+              <span class="text-cyan-400">⚡ <span id="hudXP">0</span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tab Bar (Training vs 1v1 Arena vs Profile vs Leaderboard) -->
+  <div class="relative z-30 bg-[#030712]/90 border-b border-slate-800/80 px-3 sm:px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between overflow-x-auto py-2 font-mono-cyber text-xs gap-2">
+      <div class="flex items-center gap-2">
+        <button id="tabTrainingBtn" onclick="switchMainTab('training')" class="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold transition-all flex items-center gap-2">
+          <span>🎓</span> <span>Training Academy (L1-4)</span>
+        </button>
+        <button id="tabBattleBtn" onclick="switchMainTab('battle')" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-2 relative">
+          <span>⚔️</span> <span>1v1 Battle Arena (Level 5)</span>
+          <span id="combatLockBadge" class="text-[8px] font-orbitron bg-red-500/20 text-red-400 border border-red-500/30 px-1 rounded ml-1">LOCKED</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="tabProfileBtn" onclick="switchMainTab('profile')" class="px-3.5 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-1.5">
+          <span>👤</span> <span>Profile Dossier</span>
+        </button>
+        <button id="tabLeaderboardBtn" onclick="switchMainTab('leaderboard')" class="px-3.5 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-1.5">
+          <span>🏆</span> <span>Leaderboards</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main View Container -->
+  <main class="relative z-10 flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-6">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: TRAINING ACADEMY (LEVELS 1 TO 4)    -->
+    <!-- ========================================== -->
+    <section id="viewTraining" class="space-y-6">
+      <!-- Training Status Header -->
+      <div class="glass-card p-5 sm:p-6 border-cyan-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xl">🎓</span>
+            <h2 class="font-orbitron font-extrabold text-base sm:text-lg text-white">
+              FOUNDATIONAL CYBER DEFENSE ACADEMY
+            </h2>
+          </div>
+          <p class="text-slate-400 text-xs font-mono-cyber max-w-2xl leading-relaxed">
+            Zero to Skilled Defender. Complete all 4 Training Zones (20 Missions) to qualify for your official <strong class="text-amber-400">Combat License</strong> and unlock the <strong class="text-cyan-400">Level 5 Live 1v1 Battle Arena</strong>.
+          </p>
+        </div>
+
+        <!-- License Progress Meter -->
+        <div class="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl min-w-[240px] text-xs font-mono-cyber">
+          <div class="flex justify-between mb-1.5">
+            <span class="text-slate-400">Combat License:</span>
+            <span id="trainingProgressText" class="font-bold text-cyan-400">0 / 20 Solved</span>
+          </div>
+          <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+            <div id="trainingProgressBar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all" style="width: 0%"></div>
+          </div>
+          <div id="licenseStatusLabel" class="text-[10px] text-slate-500 mt-1.5 text-center">Solve 15 missions to unlock Level 5 1v1 Arena</div>
+        </div>
+      </div>
+
+      <!-- Duolingo-style Sequential Node Pathway -->
+      <div class="node-track py-6 space-y-8 max-w-xl mx-auto" id="trainingRoadmap">
+        <!-- Injected dynamically by game.js -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: LEVEL 5 LIVE 1v1 CYBER DUEL ARENA   -->
+    <!-- ========================================== -->
+    <section id="viewBattle" class="hidden space-y-6">
+      
+      <!-- LOCK SCREEN: Displayed if User hasn't finished Level 4 -->
+      <div id="battleGateLocked" class="hidden glass-card p-8 sm:p-12 text-center max-w-2xl mx-auto border-red-500/40 space-y-5">
+        <div class="w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/50 flex items-center justify-center text-4xl mx-auto shadow-2xl shadow-red-500/20 animate-pulse">
+          🔒
+        </div>
+        <div>
+          <h2 class="font-orbitron font-extrabold text-xl sm:text-2xl text-white">
+            COMBAT LICENSE REQUIRED
+          </h2>
+          <p class="text-slate-400 text-xs sm:text-sm font-mono-cyber mt-2 max-w-md mx-auto leading-relaxed">
+            Level 5 Live 1v1 Arena is reserved for certified cyber operatives. Complete <strong class="text-cyan-400">Training Levels 1 to 4</strong> to prove your foundational skills before fighting real players!
+          </p>
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 max-w-sm mx-auto text-xs font-mono-cyber space-y-2">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Training Completion:</span>
+            <span id="lockedGateProgress" class="text-amber-400 font-bold">0 / 20</span>
+          </div>
+          <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+            <div id="lockedGateBar" class="bg-amber-400 h-full rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button onclick="switchMainTab('training')" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono-cyber text-xs transition-all shadow-lg shadow-cyan-500/20">
+            Enter Training Academy →
+          </button>
+          <button onclick="instantUnlockCombatLicense()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 font-bold font-mono-cyber text-xs transition-all">
+            ⚡ Instant Test Unlock (Skip to Level 5)
+          </button>
+        </div>
+      </div>
+
+      <!-- ARENA LOBBY: Matchmaking & Custom Rooms (Displayed when Unlocked) -->
+      <div id="battleArenaLobby" class="space-y-6">
+        
+        <!-- Live Matchmaking Banner -->
+        <div class="glass-card p-6 border-cyan-500/30 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="space-y-2 text-center md:text-left">
+            <div class="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-[11px] font-mono-cyber">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              LIVE 1v1 COMBAT ARENA ACTIVE
+            </div>
+            <h2 class="font-orbitron font-extrabold text-xl sm:text-2xl text-white">
+              CYBER WARFARE 1v1 DUEL
+            </h2>
+            <p class="text-slate-400 text-xs font-mono-cyber max-w-xl">
+              Real-time cyber clashes. Counter incoming DDoS strikes, zero-days, ransomware killchains, and SQL injections against real players or AI deamons with live in-game tactical chat!
+            </p>
+          </div>
+
+          <!-- Quick Match Button -->
+          <button onclick="startQuickMatch()" class="w-full md:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 hover:opacity-95 text-slate-950 font-orbitron font-black text-sm tracking-wide shadow-xl shadow-cyan-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+            <span class="text-xl">⚡</span>
+            <span>QUICK MATCH 1v1</span>
+          </button>
+        </div>
+
+        <!-- Custom Room / Challenge a Friend -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Create Room -->
+          <div class="glass-card p-5 border-slate-800 space-y-3 font-mono-cyber text-xs">
+            <div class="flex items-center gap-2 font-orbitron font-bold text-white text-sm">
+              <span>🤝</span> CREATE PRIVATE ROOM
+            </div>
+            <p class="text-slate-400 text-[11px]">Generate a 6-digit challenge code to play live against your friend.</p>
+            <button onclick="createPrivateRoom()" class="w-full py-2.5 rounded-xl bg-slate-900 border border-cyan-500/40 text-cyan-300 font-bold hover:bg-cyan-500/10 transition-all">
+              Generate Combat Room Code
+            </button>
+            <div id="createdRoomCodeBox" class="hidden p-3 bg-black/80 rounded-lg border border-cyan-500/50 text-center font-orbitron font-black text-lg text-amber-400">
+              <!-- Code injected -->
+            </div>
+          </div>
+
+          <!-- Join Room by Code -->
+          <div class="glass-card p-5 border-slate-800 space-y-3 font-mono-cyber text-xs">
+            <div class="flex items-center gap-2 font-orbitron font-bold text-white text-sm">
+              <span>🔑</span> JOIN ROOM WITH CODE
+            </div>
+            <p class="text-slate-400 text-[11px]">Enter a friend's 6-digit room code to join their battle arena.</p>
+            <div class="flex gap-2">
+              <input id="joinRoomCodeInput" type="text" placeholder="e.g. CYBER-4821" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-cyan-300 font-orbitron text-xs outline-none focus:border-cyan-400 uppercase">
+              <button onclick="joinPrivateRoom()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold">
+                Join
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ACTIVE 1v1 BATTLE COMBAT SCREEN -->
+      <div id="battleCombatScreen" class="hidden glass-card border-cyan-500/50 p-4 sm:p-7 relative overflow-hidden space-y-6">
+        
+        <!-- Laser Beam Canvas Overlay -->
+        <div id="laserOverlay" class="absolute inset-0 pointer-events-none"></div>
+
+        <!-- Combat Header & Round Timer -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 font-mono-cyber text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+            <span class="font-bold text-red-400 uppercase">LIVE DUEL IN PROGRESS</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500">ROUND</span>
+            <span id="combatRoundTracker" class="font-orbitron font-bold text-white">1 / 5</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">TIMER:</span>
+            <div id="combatTimerBox" class="w-9 h-9 rounded-full border-2 border-cyan-400 flex items-center justify-center font-orbitron font-black text-sm text-cyan-300">
+              12
+            </div>
+          </div>
+        </div>
+
+        <!-- Split Operative Arena: Player 1 (Blue) VS Player 2 (Red) -->
+        <div class="grid grid-cols-2 gap-4 sm:gap-8 items-center text-center">
+          
+          <!-- Player 1 (YOU) -->
+          <div id="p1Card" class="glass-card p-4 sm:p-5 border-cyan-500/40 relative space-y-2">
+            <div class="w-14 h-14 mx-auto rounded-full border-2 border-cyan-400 flex items-center justify-center overflow-hidden bg-slate-900 text-3xl shadow-lg" id="combatP1Avatar">🔰</div>
+            <div class="flex items-center justify-center gap-1.5">
+              <div class="font-orbitron font-bold text-xs sm:text-sm text-white truncate" id="combatP1Name">YOU</div>
+              <span id="combatP1Gender" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">♂️</span>
+            </div>
+            <div class="text-[10px] font-mono-cyber text-cyan-400" id="combatP1Division">Dhaka</div>
+            
+            <!-- Health Shield Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] font-mono-cyber">
+                <span class="text-slate-400">SHIELD</span>
+                <span id="combatP1HPText" class="font-bold text-emerald-400">100 HP</span>
+              </div>
+              <div class="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-800">
+                <div id="combatP1HPBar" class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full transition-all duration-300" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Player 2 (OPPONENT) -->
+          <div id="p2Card" class="glass-card p-4 sm:p-5 border-rose-500/40 relative space-y-2">
+            <div class="w-14 h-14 mx-auto rounded-full border-2 border-rose-400 flex items-center justify-center overflow-hidden bg-slate-900 text-3xl shadow-lg" id="combatP2Avatar">💀</div>
+            <div class="flex items-center justify-center gap-1.5">
+              <div class="font-orbitron font-bold text-xs sm:text-sm text-white truncate" id="combatP2Name">Opponent</div>
+              <span id="combatP2Gender" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">♀️</span>
+            </div>
+            <div class="text-[10px] font-mono-cyber text-rose-400" id="combatP2Division">Opponent</div>
+            
+            <!-- Health Shield Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] font-mono-cyber">
+                <span class="text-slate-400">SHIELD</span>
+                <span id="combatP2HPText" class="font-bold text-rose-400">100 HP</span>
+              </div>
+              <div class="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-800">
+                <div id="combatP2HPBar" class="bg-gradient-to-r from-rose-500 to-amber-400 h-full rounded-full transition-all duration-300" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Attack Clash Scenario -->
+        <div class="bg-black/80 border border-slate-800 rounded-xl p-4 font-mono-cyber text-xs text-center space-y-1">
+          <div id="combatScenarioText" class="text-amber-300 font-bold text-xs sm:text-sm">
+            INCOMING CYBER THREAT...
+          </div>
+          <div id="combatQuestionText" class="text-slate-400 text-[11px]">
+            Deploy response before timer expires:
+          </div>
+        </div>
+
+        <!-- 4 Fast Action Buttons -->
+        <div id="combatChoicesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono-cyber text-xs">
+          <!-- Injected dynamically -->
+        </div>
+
+        <!-- Live Combat Feed -->
+        <div id="combatLogBox" class="p-3 bg-slate-950 rounded-xl border border-slate-800/80 font-mono-cyber text-[11px] text-slate-400 max-h-24 overflow-y-auto space-y-1">
+          <div class="text-emerald-400 font-bold">[COMBAT LOG READY]</div>
+        </div>
+
+        <!-- LIVE 1v1 COMBAT CHAT & TACTICAL TAUNTS -->
+        <div class="bg-black/90 border border-slate-800 rounded-xl p-3 sm:p-4 font-mono-cyber space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <div class="flex items-center gap-2 text-xs font-bold text-cyan-400">
+              <span>💬</span> <span>LIVE BATTLE CHAT & TACTICAL TAUNTS</span>
+            </div>
+            <span class="text-[10px] text-slate-500">Real-time sync</span>
+          </div>
+
+          <!-- Messages scroll area -->
+          <div id="combatChatMessages" class="max-h-32 sm:max-h-40 overflow-y-auto space-y-2 text-xs pr-1">
+            <div class="text-slate-500 text-center py-2 text-[11px]">Chat channel active. Send a tactical taunt or message to your opponent!</div>
+          </div>
+
+          <!-- Quick Tactical Combat Taunts (1-tap on mobile) -->
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            <button type="button" onclick="sendQuickTaunt('🛡️ Nice Firewall!')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 text-cyan-300 text-[10px] font-bold transition-all">
+              🛡️ Nice Firewall!
+            </button>
+            <button type="button" onclick="sendQuickTaunt('⚡ Zero-Day Incoming!')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 text-cyan-300 text-[10px] font-bold transition-all">
+              ⚡ Zero-Day Incoming!
+            </button>
+            <button type="button" onclick="sendQuickTaunt('💥 Brace for DDoS!')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 text-cyan-300 text-[10px] font-bold transition-all">
+              💥 Brace for DDoS!
+            </button>
+            <button type="button" onclick="sendQuickTaunt('🕵️ Trace Failed!')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 text-cyan-300 text-[10px] font-bold transition-all">
+              🕵️ Trace Failed!
+            </button>
+            <button type="button" onclick="sendQuickTaunt('🤝 GG WP!')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 text-emerald-300 text-[10px] font-bold transition-all">
+              🤝 GG WP!
+            </button>
+            <button type="button" onclick="sendQuickTaunt('🔥 Unhackable Defense!')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-cyan-500/20 border border-slate-700 text-amber-300 text-[10px] font-bold transition-all">
+              🔥 Unhackable Defense!
+            </button>
+          </div>
+
+          <!-- Chat Input form -->
+          <form onsubmit="handleSendBattleChat(event)" class="flex gap-2">
+            <input id="combatChatInput" type="text" maxlength="100" placeholder="Type tactical combat message..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-cyan-300 text-xs outline-none focus:border-cyan-400">
+            <button type="submit" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md">
+              Send 🚀
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- BATTLE CONCLUDED VICTORY MODAL -->
+      <div id="battleVictoryModal" class="hidden glass-card p-6 sm:p-10 text-center max-w-lg mx-auto border-cyan-500/60 space-y-5">
+        <div class="text-6xl" id="victoryIcon">🏆</div>
+        <div>
+          <h3 class="font-orbitron font-extrabold text-2xl text-white" id="victoryTitle">VICTORY ACHIEVED!</h3>
+          <p class="text-slate-400 text-xs font-mono-cyber mt-1" id="victorySubtitle">Opponent firewall neutralized.</p>
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-2 gap-4 font-mono-cyber text-xs">
+          <div>
+            <div class="text-slate-500">TROPHIES</div>
+            <div id="victoryTrophies" class="font-orbitron font-bold text-lg text-amber-400">+30 🏆</div>
+          </div>
+          <div>
+            <div class="text-slate-500">XP EARNED</div>
+            <div id="victoryXP" class="font-orbitron font-bold text-lg text-cyan-400">+100 ⚡</div>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button onclick="startQuickMatch()" class="flex-1 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold font-mono-cyber text-xs">
+            Battle Again
+          </button>
+          <button onclick="returnToArenaLobby()" class="flex-1 py-3 rounded-xl border border-slate-700 text-slate-400 hover:text-white font-mono-cyber text-xs">
+            Arena Hub
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: USER PROFILE & OPERATIVE SEARCH     -->
+    <!-- ========================================== -->
+    <section id="viewProfile" class="hidden space-y-6">
+      
+      <!-- Profile Header Card -->
+      <div class="glass-card p-6 border-cyan-500/30 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+          <div class="relative group">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-2 border-cyan-400/50 flex items-center justify-center text-4xl shadow-xl shadow-cyan-500/20 overflow-hidden" id="profAvatar">
+              🔰
+            </div>
+            <button onclick="triggerProfilePhotoPicker()" class="absolute -bottom-2 -right-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 p-1.5 rounded-full shadow-lg text-xs" title="Upload Custom Photo">
+              📷
+            </button>
+            <input type="file" id="profilePhotoPickerInput" accept="image/*" class="hidden" onchange="handleProfilePhotoSelected(this.files[0])">
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <h2 class="font-orbitron font-extrabold text-xl text-white" id="profUsername">Guest</h2>
+              <span id="profGenderBadge" class="text-xs font-mono-cyber bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full font-bold">♂️ Male</span>
+              <span class="text-xs font-mono-cyber bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded font-bold" id="profRank">Script Kiddie</span>
+            </div>
+            <p class="text-slate-400 text-xs font-mono-cyber mt-1" id="profDivision">Division: Dhaka • Bangladesh</p>
+            <div class="flex items-center justify-center sm:justify-start gap-3 mt-2 text-xs font-mono-cyber">
+              <span class="text-amber-400 font-bold">🏆 <span id="profTrophies">100</span> Trophies</span>
+              <span class="text-cyan-400 font-bold">⚡ <span id="profXP">0</span> XP</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-2 justify-center">
+          <button onclick="triggerProfilePhotoPicker()" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 font-mono-cyber text-xs flex items-center gap-1.5">
+            <span>📸</span> <span>Upload Photo</span>
+          </button>
+          <button onclick="toggleUserGender()" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-pink-400 text-slate-300 font-mono-cyber text-xs flex items-center gap-1.5">
+            <span>⚧</span> <span id="profGenderToggleBtnText">Switch to Female ♀️</span>
+          </button>
+          <button onclick="openAuthModal()" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 text-slate-300 font-mono-cyber text-xs">
+            Switch / Login
+          </button>
+          <button onclick="generateHackerBadge()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold font-mono-cyber text-xs shadow-md">
+            ID Badge
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono-cyber text-xs">
+        <div class="glass-card p-4 text-center">
+          <div class="text-slate-500 text-[10px]">1v1 DUEL WINS</div>
+          <div id="profWins" class="font-orbitron font-bold text-lg text-emerald-400">0</div>
+        </div>
+        <div class="glass-card p-4 text-center">
+          <div class="text-slate-500 text-[10px]">1v1 LOSSES</div>
+          <div id="profLosses" class="font-orbitron font-bold text-lg text-rose-400">0</div>
+        </div>
+        <div class="glass-card p-4 text-center">
+          <div class="text-slate-500 text-[10px]">WIN RATE</div>
+          <div id="profWinRate" class="font-orbitron font-bold text-lg text-cyan-400">0%</div>
+        </div>
+        <div class="glass-card p-4 text-center">
+          <div class="text-slate-500 text-[10px]">TRAINING SOLVED</div>
+          <div id="profMissions" class="font-orbitron font-bold text-lg text-amber-400">0 / 20</div>
+        </div>
+      </div>
+
+      <!-- Recent Match History -->
+      <div class="glass-card p-5 border-slate-800 space-y-3 font-mono-cyber text-xs">
+        <h3 class="font-orbitron font-bold text-sm text-white flex items-center gap-2">
+          <span>📜</span> RECENT 1v1 COMBAT LOGS
+        </h3>
+        <div id="profMatchHistory" class="space-y-2">
+          <div class="text-slate-500 text-center py-4">No 1v1 battles fought yet. Enter the Arena to battle!</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: GLOBAL & NATIONAL LEADERBOARDS      -->
+    <!-- ========================================== -->
+    <section id="viewLeaderboard" class="hidden space-y-6">
+      <div class="glass-card p-5 sm:p-6 border-slate-800 space-y-4">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800 font-mono-cyber text-xs">
+          <div>
+            <h2 class="font-orbitron font-extrabold text-base text-white">
+              NATIONAL CYBER RANKINGS
+            </h2>
+            <p class="text-slate-400 text-xs">Verified real players ranked by competitive 1v1 Trophies and XP.</p>
+          </div>
+
+          <!-- Board Filter Toggle -->
+          <div class="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+            <button id="lbTrophyBtn" onclick="toggleLeaderboardType('trophies')" class="px-3 py-1 rounded bg-amber-500 text-slate-950 font-bold">
+              🏆 Combat Trophies
+            </button>
+            <button id="lbXPBtn" onclick="toggleLeaderboardType('xp')" class="px-3 py-1 rounded text-slate-400 hover:text-white">
+              ⚡ Training XP
+            </button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left font-mono-cyber text-xs">
+            <thead>
+              <tr class="text-slate-500 border-b border-slate-800/60">
+                <th class="py-2.5 px-3">#</th>
+                <th class="py-2.5 px-3">OPERATIVE</th>
+                <th class="py-2.5 px-3">DIVISION</th>
+                <th class="py-2.5 px-3 text-right" id="lbMetricHeader">TROPHIES 🏆</th>
+                <th class="py-2.5 px-3 text-right">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardTableBody" class="divide-y divide-slate-800/40 text-slate-300">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive Training Mission Modal -->
+  <div id="trainingModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="glass-card border-cyan-500/40 max-w-2xl w-full p-5 sm:p-7 relative max-h-[90vh] overflow-y-auto space-y-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 font-mono-cyber text-[11px] mb-1.5">
+            <span id="tModalBadge" class="px-2 py-0.5 rounded font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">LEVEL 1</span>
+            <span id="tModalCategory" class="text-slate-400">FOUNDATIONS</span>
+            <span id="tModalXP" class="text-amber-400 font-bold">+25 XP</span>
+          </div>
+          <h3 id="tModalTitle" class="font-orbitron font-extrabold text-base sm:text-lg text-white"></h3>
+          <p id="tModalSubtitle" class="text-slate-400 text-xs font-mono-cyber"></p>
+        </div>
+        <button onclick="closeTrainingModal()" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-sm">✕</button>
+      </div>
+
+      <!-- Scenario Brief -->
+      <div id="tModalScenario" class="bg-black/60 border border-cyan-500/20 rounded-xl p-3.5 font-mono-cyber text-xs text-emerald-400/90 leading-relaxed"></div>
+
+      <!-- Question & Answers -->
+      <div class="space-y-3 font-mono-cyber">
+        <p id="tModalQuestion" class="text-sm text-slate-200 font-semibold leading-relaxed"></p>
+        <div id="tModalChoices" class="space-y-2.5"></div>
+      </div>
+
+      <!-- Debrief / Solution -->
+      <div id="tModalDebrief" class="hidden bg-slate-900 border border-cyan-500/30 rounded-xl p-4 font-mono-cyber text-xs space-y-2">
+        <div class="text-cyan-400 font-bold text-xs uppercase">📡 CISO DEBRIEF:</div>
+        <p id="tModalDebriefText" class="text-slate-300 leading-relaxed"></p>
+        <div id="tModalRealWorld" class="bg-cyan-500/5 border border-cyan-500/20 rounded-lg p-2.5 text-[11px] text-cyan-300"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between gap-3 pt-2 font-mono-cyber text-xs">
+        <button id="tModalHintBtn" onclick="useTrainingHint()" class="px-3.5 py-2 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-400 hover:bg-amber-500/10">
+          💡 Tactical Hint (-5 XP)
+        </button>
+        <button id="tModalNextBtn" onclick="proceedNextTrainingNode()" class="hidden px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 font-bold shadow-lg">
+          Proceed Next Mission →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Public Operative Dossier Card (When Searching a Player) -->
+  <div id="dossierModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card border-cyan-500/40 max-w-md w-full p-6 text-center space-y-4">
+      <div class="flex justify-between items-center">
+        <span class="text-[10px] font-mono-cyber text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded">OPERATIVE DOSSIER</span>
+        <button onclick="closeDossierModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="w-20 h-20 mx-auto rounded-full border-2 border-cyan-400 flex items-center justify-center overflow-hidden bg-slate-900 text-4xl shadow-lg" id="dossierAvatar">🔰</div>
+      <div>
+        <div class="flex items-center justify-center gap-1.5">
+          <h3 class="font-orbitron font-extrabold text-xl text-white" id="dossierUsername">Agent</h3>
+          <span id="dossierGenderBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">♂️</span>
+        </div>
+        <p class="text-xs font-mono-cyber text-cyan-400" id="dossierRank">Script Kiddie</p>
+        <p class="text-xs font-mono-cyber text-slate-500" id="dossierDivision">Dhaka</p>
+      </div>
+
+      <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-2 gap-3 font-mono-cyber text-xs">
+        <div>
+          <div class="text-slate-500">TROPHIES</div>
+          <div id="dossierTrophies" class="font-orbitron font-bold text-amber-400 text-base">100 🏆</div>
+        </div>
+        <div>
+          <div class="text-slate-500">WIN RATE</div>
+          <div id="dossierWinRate" class="font-orbitron font-bold text-emerald-400 text-base">0%</div>
+        </div>
+      </div>
+
+      <button id="dossierChallengeBtn" onclick="challengeDossierPlayer()" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 text-white font-orbitron font-bold text-xs shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2">
+        <span>⚔️</span> <span>CHALLENGE TO 1v1 CYBER DUEL</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Auth Modal (Distinct Dedicated Register vs Login Tabs) -->
+  <div id="authModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="glass-card border-cyan-500/40 max-w-lg w-full p-5 sm:p-6 space-y-4 my-auto max-h-[92vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="text-center space-y-1">
+        <div class="text-3xl">🪪</div>
+        <h3 class="font-orbitron font-bold text-lg text-white" id="authModalTitle">CYBER OPERATIVE ACCESS</h3>
+        <p class="text-slate-400 text-xs font-mono-cyber">Create your persistent Call Sign or sign into your profile.</p>
+      </div>
+
+      <!-- Tab Switcher (Register vs Login) -->
+      <div class="grid grid-cols-2 bg-slate-950 p-1 rounded-xl border border-slate-800 font-mono-cyber text-xs">
+        <button id="authTabRegisterBtn" type="button" onclick="switchAuthTab('register')" class="py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-bold transition-all flex items-center justify-center gap-1.5">
+          <span>🌟</span> <span>নতুন একাউন্ট (Register)</span>
+        </button>
+        <button id="authTabLoginBtn" type="button" onclick="switchAuthTab('login')" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center gap-1.5">
+          <span>🔑</span> <span>লগইন (Login)</span>
+        </button>
+      </div>
+
+      <!-- Registration Form -->
+      <form id="regForm" onsubmit="handleRegisterSubmit(event)" class="space-y-3.5 font-mono-cyber text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-bold">Call Sign (ইউজারনেম) *</label>
+          <input id="regUsernameInput" type="text" required minlength="3" maxlength="18" placeholder="e.g. ShadowHunter, CyberNafi" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-cyan-300 outline-none focus:border-cyan-400">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-bold">গোপন ৪-ডিজিট পিন বা পাসওয়ার্ড *</label>
+          <input id="regPinInput" type="password" required minlength="4" maxlength="12" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-cyan-300 outline-none focus:border-cyan-400">
+        </div>
+
+        <!-- Gender Selection (Male vs Female) -->
+        <div>
+          <label class="block text-slate-300 mb-1.5 font-bold">জেন্ডার (Gender) *</label>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button type="button" id="genderMaleBtn" onclick="selectAuthGender('male')" class="p-2.5 rounded-xl border-2 border-cyan-400 bg-cyan-500/20 text-cyan-300 font-bold flex items-center justify-center gap-2">
+              <span class="text-base">👨</span> <span>পুরুষ (Male ♂️)</span>
+            </button>
+            <button type="button" id="genderFemaleBtn" onclick="selectAuthGender('female')" class="p-2.5 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 font-bold flex items-center justify-center gap-2">
+              <span class="text-base">👩</span> <span>নারী (Female ♀️)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Profile Photo Upload -->
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+          <label class="block text-slate-300 text-xs font-bold">প্রোফাইল ফটো (Custom Profile Photo Upload)</label>
+          
+          <div class="flex items-center gap-3">
+            <div id="authPhotoPreviewBox" class="w-14 h-14 rounded-full border-2 border-cyan-400/50 bg-slate-900 flex items-center justify-center overflow-hidden text-2xl shadow-md">
+              <span id="authPhotoPreviewIcon">👨‍💻</span>
+            </div>
+
+            <div class="flex-1 space-y-1">
+              <input type="file" id="authPhotoFileInput" accept="image/*" class="hidden" onchange="handleAuthPhotoUploaded(this.files[0])">
+              <button type="button" onclick="document.getElementById('authPhotoFileInput').click()" class="w-full py-2 px-3 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                <span>📸</span> <span>Upload Photo from Device</span>
+              </button>
+              <div id="authPhotoName" class="text-[10px] text-slate-500 truncate">JPEG/PNG auto-scaled to profile size</div>
+            </div>
+          </div>
+
+          <!-- Preset Avatar Picker -->
+          <div class="pt-1">
+            <span class="text-[10px] text-slate-400 block mb-1">অথবা সাইবার অবতার বেছে নিন:</span>
+            <div class="grid grid-cols-5 gap-1.5 text-lg" id="authAvatarPicker"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">সাইবার ডিভিশন (Division)</label>
+          <select id="regDivisionSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 outline-none focus:border-cyan-400">
+            <option value="Dhaka">Dhaka Division</option>
+            <option value="Chittagong">Chittagong Division</option>
+            <option value="Sylhet">Sylhet Division</option>
+            <option value="Rajshahi">Rajshahi Division</option>
+            <option value="Khulna">Khulna Division</option>
+            <option value="Barishal">Barishal Division</option>
+            <option value="Rangpur">Rangpur Division</option>
+            <option value="Mymensingh">Mymensingh Division</option>
+            <option value="Global">Diaspora / Global</option>
+          </select>
+        </div>
+
+        <div class="pt-2 flex gap-3">
+          <button type="button" onclick="closeAuthModal()" class="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white">Cancel</button>
+          <button type="submit" id="regSubmitBtn" class="flex-1 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20">
+            🌟 Create Account
+          </button>
+        </div>
+      </form>
+
+      <!-- Login Form (Hidden by default until switched) -->
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="hidden space-y-4 font-mono-cyber text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-bold">Call Sign (আপনার ইউজারনেম) *</label>
+          <input id="loginUsernameInput" type="text" required placeholder="e.g. ShadowHunter" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-cyan-300 outline-none focus:border-cyan-400">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-bold">গোপন ৪-ডিজিট পিন বা পাসওয়ার্ড *</label>
+          <input id="loginPinInput" type="password" required placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-cyan-300 outline-none focus:border-cyan-400">
+        </div>
+
+        <div class="pt-2 flex gap-3">
+          <button type="button" onclick="closeAuthModal()" class="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white">Cancel</button>
+          <button type="submit" id="loginSubmitBtn" class="flex-1 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20">
+            🔑 Log In
+          </button>
+        </div>
+      </form>
+
+      <!-- Continue as Guest Option -->
+      <div class="pt-2 text-center border-t border-slate-800/80">
+        <button type="button" onclick="continueAsGuest()" class="text-xs text-slate-400 hover:text-cyan-300 font-mono-cyber underline">
+          খেলার জন্য গেস্ট মোডে চালিয়ে যান (Continue as Guest) →
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Cyber Badge Export Canvas Modal -->
+  <div id="badgeModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card border-emerald-500/40 max-w-lg w-full p-6 text-center space-y-4">
+      <div class="flex items-center justify-between">
+        <h4 class="font-orbitron font-bold text-sm text-emerald-400">OFFICIAL CYBER OPERATIVE CREDENTIAL</h4>
+        <button onclick="closeBadgeModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <canvas id="idCardCanvas" width="600" height="340" class="w-full rounded-xl border border-cyan-500/40 shadow-xl"></canvas>
+      <div class="flex gap-3 justify-center font-mono-cyber text-xs">
+        <button onclick="downloadIdBadge()" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold">
+          💾 Download PNG
+        </button>
+        <button onclick="shareIdBadge()" class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200">
+          📲 Share
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Footer -->
+  <footer class="relative z-10 border-t border-slate-800/80 bg-[#030712] py-6 px-4 text-center text-xs font-mono-cyber text-slate-500 space-y-1">
+    <p>© 2026 SentinelX Defense Lab. Bangladesh's Premier Gamified Cyber Defense Platform.</p>
+  </footer>
+
+  <script src="game.js"></script>
+</body>
 </html>
