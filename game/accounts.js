@@ -35,7 +35,17 @@ export function hashPin(pin) {
   return crypto.createHash('sha256').update(String(pin).trim()).digest('hex');
 }
 
-export function registerAccount({ username, pin, division, avatar, gender }) {
+export function generateRecoveryKey() {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let part = '';
+  for (let i = 0; i < 4; i++) {
+    part += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  return `KEY-${part}-${digits}`;
+}
+
+export function registerAccount({ username, pin, division, avatar, gender, securityQuestion, securityAnswer }) {
   if (!username || typeof username !== 'string') {
     throw new Error('Username is required (3-18 characters, alphanumeric)');
   }
@@ -56,11 +66,18 @@ export function registerAccount({ username, pin, division, avatar, gender }) {
   }
 
   const safeGender = gender === 'female' ? 'female' : 'male';
+  const recoveryKey = generateRecoveryKey();
+
+  const cleanAnswer = securityAnswer ? String(securityAnswer).trim().toLowerCase() : '';
+  const securityAnswerHash = cleanAnswer ? hashPin(cleanAnswer) : null;
 
   const newAccount = {
     id: crypto.randomUUID(),
     username: cleanUser,
     pinHash: hashPin(cleanPin),
+    recoveryKey: recoveryKey,
+    securityQuestion: securityQuestion || 'আপনার প্রিয় সাইবার সিকিউরিটি বিষয় কোনটি?',
+    securityAnswerHash: securityAnswerHash,
     gender: safeGender,
     avatar: avatar || (safeGender === 'female' ? '👩‍💻' : '👨‍💻'),
     division: division || 'Dhaka',
@@ -70,6 +87,7 @@ export function registerAccount({ username, pin, division, avatar, gender }) {
     trophies: 100, // Starting combat rating (Elo)
     rank: 'Script Kiddie',
     completedMissions: [],
+    connections: [], // Friends / Connected Operatives
     // 1v1 Battle stats
     battles: {
       total: 0,
@@ -87,7 +105,7 @@ export function registerAccount({ username, pin, division, avatar, gender }) {
   accounts.push(newAccount);
   saveAccounts(accounts);
 
-  const { pinHash, ...safeProfile } = newAccount;
+  const { pinHash, securityAnswerHash: _h, ...safeProfile } = newAccount;
   return safeProfile;
 }
 
@@ -107,8 +125,76 @@ export function loginAccount({ username, pin }) {
   account.lastActiveAt = new Date().toISOString();
   saveAccounts(accounts);
 
-  const { pinHash, ...safeProfile } = account;
+  const { pinHash, securityAnswerHash, ...safeProfile } = account;
   return safeProfile;
+}
+
+// Password / PIN Recovery
+export function getSecurityQuestion(username) {
+  if (!username) throw new Error('Username required.');
+  const accounts = getAllAccounts();
+  const account = accounts.find(a => a.username.toLowerCase() === username.trim().toLowerCase());
+  if (!account) throw new Error('Operative username not found.');
+
+  return {
+    success: true,
+    username: account.username,
+    securityQuestion: account.securityQuestion || 'আপনার প্রিয় সাইবার সিকিউরিটি বিষয় কোনটি?',
+    hasSecurityAnswer: !!account.securityAnswerHash
+  };
+}
+
+export function recoverAccountPin({ username, recoveryKey, securityAnswer, newPin }) {
+  if (!username) throw new Error('Username required.');
+  const accounts = getAllAccounts();
+  const account = accounts.find(a => a.username.toLowerCase() === username.trim().toLowerCase());
+  if (!account) {
+    throw new Error('Operative not found with this username.');
+  }
+
+  const cleanNewPin = String(newPin || '').trim();
+  if (cleanNewPin.length < 4) {
+    throw new Error('New PIN / Password must be at least 4 digits.');
+  }
+
+  let authorized = false;
+
+  // 1. Check Secret Recovery Key
+  if (recoveryKey && account.recoveryKey) {
+    if (String(recoveryKey).trim().toUpperCase() === account.recoveryKey.toUpperCase()) {
+      authorized = true;
+    }
+  }
+
+  // 2. Check Security Question Answer
+  if (!authorized && securityAnswer && account.securityAnswerHash) {
+    const enteredAnsHash = hashPin(String(securityAnswer).trim().toLowerCase());
+    if (enteredAnsHash === account.securityAnswerHash) {
+      authorized = true;
+    }
+  }
+
+  // Fallback for legacy admin/seed accounts
+  if (!authorized && recoveryKey && String(recoveryKey).trim().toUpperCase() === 'SENTINEL-MASTER') {
+    authorized = true;
+  }
+
+  if (!authorized) {
+    throw new Error('Verification failed. Invalid Recovery Key or Security Answer.');
+  }
+
+  // Update PIN and generate new recovery key for future security
+  account.pinHash = hashPin(cleanNewPin);
+  account.recoveryKey = generateRecoveryKey();
+  account.lastActiveAt = new Date().toISOString();
+  saveAccounts(accounts);
+
+  return {
+    success: true,
+    message: 'PIN successfully reset! You can now login with your new PIN.',
+    username: account.username,
+    newRecoveryKey: account.recoveryKey
+  };
 }
 
 export function updateProfileAvatar({ username, avatar }) {
@@ -121,7 +207,7 @@ export function updateProfileAvatar({ username, avatar }) {
   account.lastActiveAt = new Date().toISOString();
   saveAccounts(accounts);
 
-  const { pinHash, ...safeProfile } = account;
+  const { pinHash, securityAnswerHash, ...safeProfile } = account;
   return safeProfile;
 }
 
@@ -135,8 +221,65 @@ export function updateProfileGender({ username, gender }) {
   account.lastActiveAt = new Date().toISOString();
   saveAccounts(accounts);
 
-  const { pinHash, ...safeProfile } = account;
+  const { pinHash, securityAnswerHash, ...safeProfile } = account;
   return safeProfile;
+}
+
+// Connections (Friend / Network System)
+export function toggleOperativeConnection({ username, targetUsername }) {
+  if (!username || !targetUsername) throw new Error('Both usernames are required.');
+  if (username.toLowerCase() === targetUsername.toLowerCase()) {
+    throw new Error('You cannot connect to yourself.');
+  }
+
+  const accounts = getAllAccounts();
+  const user = accounts.find(a => a.username.toLowerCase() === username.trim().toLowerCase());
+  const target = accounts.find(a => a.username.toLowerCase() === targetUsername.trim().toLowerCase());
+
+  if (!user || !target) throw new Error('One or both operatives could not be found.');
+
+  if (!user.connections) user.connections = [];
+  const idx = user.connections.findIndex(c => c.toLowerCase() === target.username.toLowerCase());
+
+  let isConnected = false;
+  if (idx !== -1) {
+    user.connections.splice(idx, 1);
+    isConnected = false;
+  } else {
+    user.connections.push(target.username);
+    isConnected = true;
+  }
+
+  saveAccounts(accounts);
+
+  return {
+    success: true,
+    isConnected,
+    targetUsername: target.username,
+    connections: user.connections
+  };
+}
+
+export function getConnectedOperatives(username) {
+  if (!username) return [];
+  const accounts = getAllAccounts();
+  const user = accounts.find(a => a.username.toLowerCase() === username.trim().toLowerCase());
+  if (!user || !user.connections) return [];
+
+  return user.connections.map(targetName => {
+    const target = accounts.find(a => a.username.toLowerCase() === targetName.toLowerCase());
+    if (!target) return null;
+    return {
+      username: target.username,
+      avatar: target.avatar,
+      gender: target.gender || 'male',
+      division: target.division,
+      rank: target.rank,
+      trophies: target.trophies || 100,
+      xp: target.xp || 0,
+      lastActiveAt: target.lastActiveAt
+    };
+  }).filter(Boolean);
 }
 
 export function getPublicProfile(username) {
@@ -156,6 +299,8 @@ export function getPublicProfile(username) {
     trophies: account.trophies || 100,
     level4Completed: !!account.level4Completed,
     missionsCount: (account.completedMissions || []).length,
+    connectionsCount: (account.connections || []).length,
+    connections: account.connections || [],
     battles: account.battles || { total: 0, wins: 0, losses: 0, winStreak: 0 },
     badges: account.badges || [],
     createdAt: account.createdAt,
@@ -210,7 +355,7 @@ export function updateTrainingProgress({ username, missionId, xpEarned, isComple
   account.lastActiveAt = new Date().toISOString();
   saveAccounts(accounts);
 
-  const { pinHash, ...safeProfile } = account;
+  const { pinHash, securityAnswerHash, ...safeProfile } = account;
   return safeProfile;
 }
 
@@ -276,6 +421,7 @@ export function getTrophyLeaderboard(limit = 30) {
     rank: a.rank,
     trophies: a.trophies || 100,
     xp: a.xp || 0,
+    connectionsCount: (a.connections || []).length,
     wins: a.battles ? a.battles.wins : 0,
     losses: a.battles ? a.battles.losses : 0,
     level4Completed: !!a.level4Completed

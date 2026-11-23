@@ -576,7 +576,13 @@ let state = {
     roundTimer: null,
     timeLeft: 12
   },
-  leaderboardType: 'trophies' // 'trophies' or 'xp'
+  leaderboardType: 'trophies', // 'trophies' or 'xp'
+  comms: {
+    activeChannel: 'global',
+    directRecipient: null,
+    pollTimer: null
+  },
+  recoveryMethod: 'key'
 };
 
 // ============ APP INITIALIZATION ============
@@ -616,12 +622,22 @@ function switchMainTab(tab) {
   document.getElementById('tabBattleBtn').className = tab === 'battle' ? 'px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold transition-all flex items-center gap-2 relative' : 'px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-2 relative';
   document.getElementById('tabProfileBtn').className = tab === 'profile' ? 'px-3.5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold transition-all flex items-center gap-1.5' : 'px-3.5 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-1.5';
   document.getElementById('tabLeaderboardBtn').className = tab === 'leaderboard' ? 'px-3.5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold transition-all flex items-center gap-1.5' : 'px-3.5 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-1.5';
+  
+  const commsBtn = document.getElementById('tabCommsBtn');
+  if (commsBtn) {
+    commsBtn.className = tab === 'comms' ? 'px-3.5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold transition-all flex items-center gap-1.5 relative' : 'px-3.5 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-all flex items-center gap-1.5 relative';
+  }
 
   // Views
   document.getElementById('viewTraining').classList.toggle('hidden', tab !== 'training');
   document.getElementById('viewBattle').classList.toggle('hidden', tab !== 'battle');
   document.getElementById('viewProfile').classList.toggle('hidden', tab !== 'profile');
   document.getElementById('viewLeaderboard').classList.toggle('hidden', tab !== 'leaderboard');
+  const viewComms = document.getElementById('viewComms');
+  if (viewComms) viewComms.classList.toggle('hidden', tab !== 'comms');
+
+  if (tab === 'comms') initCommsHub();
+  else stopCommsPolling();
 
   if (tab === 'battle') checkCombatGate();
   if (tab === 'profile') renderProfileStats();
@@ -1370,6 +1386,8 @@ async function handleRegisterSubmit(e) {
   const division = document.getElementById('regDivisionSelect').value;
   const avatar = state.authUploadedPhoto || selectedPresetAvatar;
   const gender = state.authSelectedGender;
+  const securityQuestion = document.getElementById('regSecQuestionSelect') ? document.getElementById('regSecQuestionSelect').value : '';
+  const securityAnswer = document.getElementById('regSecAnswerInput') ? document.getElementById('regSecAnswerInput').value.trim() : '';
 
   try {
     const res = await fetch(API_BASE + '/api/cyber/auth/register', {
@@ -1380,14 +1398,20 @@ async function handleRegisterSubmit(e) {
         pin,
         division,
         avatar,
-        gender
+        gender,
+        securityQuestion,
+        securityAnswer
       })
     });
 
     const data = await res.json();
     if (data.success && data.profile) {
       applySignedInProfile(data.profile);
-      alert(`🎉 Welcome, Operative ${data.profile.username}! Your persistent CyberGameS account is created.`);
+      if (data.profile.recoveryKey) {
+        showRecoveryKeyModal(data.profile.recoveryKey);
+      } else {
+        alert(`🎉 Welcome, Operative ${data.profile.username}! Your persistent CyberGameS account is created.`);
+      }
     } else {
       alert(data.error || 'Registration failed.');
     }
@@ -1971,6 +1995,476 @@ function initMatrixCanvas() {
 }
 
 
+
+// ==========================================
+// 📡 CYBER COMMS & SOCIAL NETWORKING ENGINE
+// ==========================================
+
+function initCommsHub() {
+  refreshGlobalComms();
+  refreshConnectionsList();
+  startCommsPolling();
+}
+
+function startCommsPolling() {
+  stopCommsPolling();
+  state.comms.pollTimer = setInterval(() => {
+    if (state.activeTab !== 'comms') return;
+    if (state.comms.activeChannel === 'global') {
+      refreshGlobalComms(true);
+    } else if (state.comms.activeChannel === 'direct' && state.comms.directRecipient) {
+      refreshDirectComms(state.comms.directRecipient, true);
+    }
+  }, 2500);
+}
+
+function stopCommsPolling() {
+  if (state.comms.pollTimer) {
+    clearInterval(state.comms.pollTimer);
+    state.comms.pollTimer = null;
+  }
+}
+
+function switchCommsChannel(channel) {
+  sounds.click();
+  state.comms.activeChannel = channel;
+
+  const btnGlobal = document.getElementById('subCommsGlobalBtn');
+  const btnDirect = document.getElementById('subCommsDirectBtn');
+  const btnNet = document.getElementById('subCommsNetworkBtn');
+
+  if (btnGlobal) btnGlobal.className = channel === 'global' ? 'px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold transition-all flex items-center gap-1.5' : 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+  if (btnDirect) btnDirect.className = channel === 'direct' ? 'px-3 py-1.5 rounded-lg bg-purple-500 text-slate-950 font-bold transition-all flex items-center gap-1.5' : 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+  if (btnNet) btnNet.className = channel === 'network' ? 'px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold transition-all flex items-center gap-1.5' : 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+
+  document.getElementById('commsGlobalChannel').classList.toggle('hidden', channel !== 'global');
+  document.getElementById('commsDirectChannel').classList.toggle('hidden', channel !== 'direct');
+  document.getElementById('commsNetworkChannel').classList.toggle('hidden', channel !== 'network');
+
+  if (channel === 'global') refreshGlobalComms();
+  if (channel === 'network') refreshConnectionsList();
+  if (channel === 'direct' && state.comms.directRecipient) refreshDirectComms(state.comms.directRecipient);
+}
+
+// Global Comms Feed
+let lastGlobalMsgCount = 0;
+async function refreshGlobalComms(isSilent = false) {
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/comms/global');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && data.messages) {
+      renderGlobalCommsFeed(data.messages, isSilent);
+    }
+  } catch (e) {}
+}
+
+function renderGlobalCommsFeed(messages, isSilent = false) {
+  const container = document.getElementById('globalCommsFeed');
+  if (!container) return;
+
+  if (messages.length === 0) {
+    container.innerHTML = '<div class="text-slate-500 text-center py-8">No broadcasts yet. Be the first to post!</div>';
+    return;
+  }
+
+  container.innerHTML = messages.map(m => {
+    const isMe = m.sender.toLowerCase() === state.account.username.toLowerCase();
+    const genderTag = m.gender === 'female' ? '<span class="text-pink-400 font-bold">♀️</span>' : '<span class="text-cyan-400 font-bold">♂️</span>';
+    const timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return `
+      <div class="flex items-start gap-2.5 ${isMe ? 'flex-row-reverse text-right' : 'text-left'}">
+        <div onclick="openDossierModal('${m.sender}')" class="cursor-pointer w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-slate-900 border border-slate-700 flex items-center justify-center text-xs shadow">
+          ${renderAvatarHTML(m.avatar, "w-full h-full")}
+        </div>
+        <div class="max-w-[80%]">
+          <div class="text-[10px] text-slate-500 space-x-1.5 mb-0.5">
+            <span onclick="openDossierModal('${m.sender}')" class="font-bold cursor-pointer hover:underline ${isMe ? 'text-cyan-300' : 'text-slate-300'}">${m.sender}</span>
+            <span>${genderTag}</span>
+            <span class="text-[9px] text-slate-600">${timeStr}</span>
+          </div>
+          <div class="inline-block p-2.5 rounded-xl text-xs leading-relaxed ${isMe ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-200' : 'bg-slate-900 border border-slate-800 text-slate-200'}">
+            ${escapeHtml(m.text)}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (messages.length !== lastGlobalMsgCount) {
+    lastGlobalMsgCount = messages.length;
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+async function handleSendGlobalComms(e) {
+  e.preventDefault();
+  sounds.click();
+  const input = document.getElementById('globalCommsInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/comms/global', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: state.account.username,
+        avatar: state.account.avatar,
+        gender: state.account.gender,
+        text
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.message) {
+      sounds.correct();
+      refreshGlobalComms();
+    } else {
+      alert(data.error || 'Failed to broadcast message.');
+    }
+  } catch (err) {
+    alert('Network error broadcasting comms.');
+  }
+}
+
+function sendQuickGlobalChip(phrase) {
+  document.getElementById('globalCommsInput').value = phrase;
+  handleSendGlobalComms(new Event('submit'));
+}
+
+// Direct 1v1 Encrypted Comms
+let lastDirectMsgCount = 0;
+async function openDirectChatWithUser(recipientUsername) {
+  if (!recipientUsername) return;
+  sounds.click();
+  state.comms.directRecipient = recipientUsername;
+
+  // Fetch recipient public profile for header
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/profile/' + encodeURIComponent(recipientUsername));
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.profile) {
+        const p = data.profile;
+        document.getElementById('directChatRecipientAvatar').innerHTML = renderAvatarHTML(p.avatar, "w-full h-full");
+        document.getElementById('directChatRecipientName').textContent = p.username;
+        const genEl = document.getElementById('directChatRecipientGender');
+        if (genEl) genEl.innerHTML = p.gender === 'female' ? '♀️' : '♂️';
+        document.getElementById('directChatRecipientRank').textContent = `${p.rank} • ${p.trophies} 🏆`;
+      }
+    }
+  } catch (e) {}
+
+  switchCommsChannel('direct');
+  refreshDirectComms(recipientUsername);
+}
+
+async function refreshDirectComms(recipientUsername, isSilent = false) {
+  if (!recipientUsername) return;
+  try {
+    const res = await fetch(API_BASE + `/api/cyber/comms/direct/${encodeURIComponent(state.account.username)}/${encodeURIComponent(recipientUsername)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && data.messages) {
+      renderDirectCommsFeed(data.messages, recipientUsername, isSilent);
+    }
+  } catch (e) {}
+}
+
+function renderDirectCommsFeed(messages, recipientUsername, isSilent = false) {
+  const container = document.getElementById('directCommsFeed');
+  if (!container) return;
+
+  if (messages.length === 0) {
+    container.innerHTML = `<div class="text-slate-500 text-center py-8">Encrypted channel established with <strong>${recipientUsername}</strong>. Send a message to start the conversation!</div>`;
+    return;
+  }
+
+  container.innerHTML = messages.map(m => {
+    const isMe = m.sender.toLowerCase() === state.account.username.toLowerCase();
+    const timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return `
+      <div class="flex items-start gap-2.5 ${isMe ? 'flex-row-reverse text-right' : 'text-left'}">
+        <div class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-slate-900 border border-slate-700 flex items-center justify-center text-xs shadow">
+          ${renderAvatarHTML(m.avatar, "w-full h-full")}
+        </div>
+        <div class="max-w-[80%]">
+          <div class="text-[10px] text-slate-500 space-x-1.5 mb-0.5">
+            <span class="font-bold ${isMe ? 'text-purple-300' : 'text-slate-300'}">${m.sender}</span>
+            <span class="text-[9px] text-slate-600">${timeStr}</span>
+          </div>
+          <div class="inline-block p-2.5 rounded-xl text-xs leading-relaxed ${isMe ? 'bg-purple-500/25 border border-purple-500/40 text-purple-200' : 'bg-slate-900 border border-slate-800 text-slate-200'}">
+            ${escapeHtml(m.text)}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (messages.length !== lastDirectMsgCount) {
+    lastDirectMsgCount = messages.length;
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+async function handleSendDirectComms(e) {
+  e.preventDefault();
+  sounds.click();
+  if (!state.comms.directRecipient) {
+    alert('Please select a recipient operative first.');
+    return;
+  }
+
+  const input = document.getElementById('directCommsInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/comms/direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: state.account.username,
+        recipient: state.comms.directRecipient,
+        avatar: state.account.avatar,
+        gender: state.account.gender,
+        text
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.message) {
+      sounds.correct();
+      refreshDirectComms(state.comms.directRecipient);
+    } else {
+      alert(data.error || 'Failed to deliver message.');
+    }
+  } catch (err) {
+    alert('Network error sending encrypted message.');
+  }
+}
+
+function challengeDirectChatUser() {
+  if (!state.comms.directRecipient) return;
+  sounds.click();
+  switchMainTab('battle');
+  startQuickMatch();
+}
+
+// Connections (Friend / Alliance Network)
+async function refreshConnectionsList() {
+  if (!state.account.username || state.account.username.startsWith('Guest_')) return;
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/connections/' + encodeURIComponent(state.account.username));
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && data.connections) {
+      renderConnectionsGrid(data.connections);
+      const countBadge = document.getElementById('commsFriendsBadgeCount');
+      if (countBadge) countBadge.textContent = data.connections.length;
+    }
+  } catch (e) {}
+}
+
+function renderConnectionsGrid(connections) {
+  const grid = document.getElementById('connectionsGrid');
+  if (!grid) return;
+
+  if (connections.length === 0) {
+    grid.innerHTML = '<div class="text-slate-500 text-center col-span-full py-8 font-mono-cyber text-xs">No operatives connected yet. Use Search or Leaderboard to add friends!</div>';
+    return;
+  }
+
+  grid.innerHTML = connections.map(c => `
+    <div class="glass-card p-4 border-slate-800 space-y-3 font-mono-cyber text-xs hover:border-cyan-500/40 transition-all">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full border border-cyan-400 overflow-hidden flex items-center justify-center bg-slate-900 text-lg">
+          ${renderAvatarHTML(c.avatar, "w-full h-full")}
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-white">${c.username}</span>
+            ${renderGenderBadge(c.gender)}
+          </div>
+          <div class="text-[10px] text-cyan-400">${c.rank}</div>
+          <div class="text-[10px] text-slate-500">${c.division} • ${c.trophies} 🏆</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button onclick="openDirectChatWithUser('${c.username}')" class="py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 font-bold hover:bg-purple-500/30 text-[11px] flex items-center justify-center gap-1">
+          <span>💬</span> <span>Chat</span>
+        </button>
+        <button onclick="toggleConnectionWithUser('${c.username}')" class="py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 text-[11px] flex items-center justify-center gap-1">
+          <span>✕</span> <span>Remove</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleConnectionWithUser(targetUsername) {
+  if (!state.account.username || state.account.username.startsWith('Guest_')) {
+    alert('Please register or login first to connect with other operatives.');
+    openAuthModal();
+    return;
+  }
+
+  sounds.click();
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/connections/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: state.account.username,
+        targetUsername
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      sounds.correct();
+      refreshConnectionsList();
+      if (dossierCurrentPlayer && dossierCurrentPlayer.username.toLowerCase() === targetUsername.toLowerCase()) {
+        updateDossierConnectBtn(data.isConnected);
+      }
+      alert(data.isConnected ? `🤝 Connected with Operative ${targetUsername}!` : `Disconnected from ${targetUsername}.`);
+    }
+  } catch (e) {
+    alert('Failed to update connection.');
+  }
+}
+
+function updateDossierConnectBtn(isConnected) {
+  const btn = document.getElementById('dossierConnectBtn');
+  const txt = document.getElementById('dossierConnectBtnText');
+  if (!btn || !txt) return;
+
+  if (isConnected) {
+    btn.className = 'py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5';
+    txt.textContent = '✓ Connected';
+  } else {
+    btn.className = 'py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-bold text-xs hover:bg-cyan-500/30 transition-all flex items-center justify-center gap-1.5';
+    txt.textContent = 'Connect / Friend';
+  }
+}
+
+function toggleDossierConnection() {
+  if (!dossierCurrentPlayer) return;
+  toggleConnectionWithUser(dossierCurrentPlayer.username);
+}
+
+function openDirectCommsFromDossier() {
+  if (!dossierCurrentPlayer) return;
+  closeDossierModal();
+  switchMainTab('comms');
+  openDirectChatWithUser(dossierCurrentPlayer.username);
+}
+
+// ==========================================
+// 🔐 PASSWORD & PIN RECOVERY ENGINE
+// ==========================================
+
+function selectRecoveryMethod(method) {
+  sounds.click();
+  state.recoveryMethod = method;
+  const isKey = method === 'key';
+
+  const btnKey = document.getElementById('recMethodKeyBtn');
+  const btnQ = document.getElementById('recMethodQuestionBtn');
+
+  if (btnKey) btnKey.className = isKey ? 'p-2 rounded-lg border-2 border-cyan-400 bg-cyan-500/20 text-cyan-300 font-bold' : 'p-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-400 font-bold';
+  if (btnQ) btnQ.className = !isKey ? 'p-2 rounded-lg border-2 border-cyan-400 bg-cyan-500/20 text-cyan-300 font-bold' : 'p-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-400 font-bold';
+
+  document.getElementById('recKeyInputBox').classList.toggle('hidden', !isKey);
+  document.getElementById('recQuestionInputBox').classList.toggle('hidden', isKey);
+}
+
+async function fetchRecoveryQuestion() {
+  sounds.click();
+  const username = document.getElementById('recoverUsernameInput').value.trim();
+  if (!username) {
+    alert('Please enter your Call Sign (username) first.');
+    return;
+  }
+
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/auth/security-question/' + encodeURIComponent(username));
+    const data = await res.json();
+    if (data.success && data.securityQuestion) {
+      document.getElementById('recQuestionLabel').innerHTML = `<strong>প্রশ্ন:</strong> ${data.securityQuestion}`;
+      alert(`সিকিউরিটি প্রশ্ন লোড হয়েছে: "${data.securityQuestion}"`);
+      selectRecoveryMethod('question');
+    } else {
+      alert(data.error || 'Username not found.');
+    }
+  } catch (e) {
+    alert('Failed to fetch security question.');
+  }
+}
+
+async function handleRecoverySubmit(e) {
+  e.preventDefault();
+  sounds.click();
+  const username = document.getElementById('recoverUsernameInput').value.trim();
+  const newPin = document.getElementById('recoverNewPinInput').value.trim();
+  const recoveryKey = document.getElementById('recoverKeyInput').value.trim();
+  const securityAnswer = document.getElementById('recoverSecAnswerInput').value.trim();
+
+  if (!username || !newPin) {
+    alert('Username and new PIN are required.');
+    return;
+  }
+
+  try {
+    const res = await fetch(API_BASE + '/api/cyber/auth/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        newPin,
+        recoveryKey,
+        securityAnswer
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      sounds.victory();
+      triggerConfetti();
+      alert(data.message || 'PIN successfully reset!');
+      switchAuthTab('login');
+      document.getElementById('loginUsernameInput').value = username;
+      document.getElementById('loginPinInput').value = newPin;
+    } else {
+      alert(data.error || 'Recovery failed. Invalid Key or Answer.');
+    }
+  } catch (err) {
+    alert('Network error attempting recovery.');
+  }
+}
+
+function showRecoveryKeyModal(key) {
+  document.getElementById('displayedRecoveryKeyText').textContent = key;
+  document.getElementById('recoveryKeyModal').classList.remove('hidden');
+}
+
+function closeRecoveryKeyModal() {
+  document.getElementById('recoveryKeyModal').classList.add('hidden');
+}
+
+function copyRecoveryKey() {
+  const key = document.getElementById('displayedRecoveryKeyText').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(key);
+    alert('📋 Recovery key copied to clipboard! Keep it safe.');
+  }
+}
+
+
 // Explicit Window Exports for 100% Reliable HTML onclick Binding
 if (typeof window !== 'undefined') {
   window.toggleAudio = toggleAudio;
@@ -2011,4 +2505,22 @@ if (typeof window !== 'undefined') {
   window.submitTrainingAnswer = submitTrainingAnswer;
   window.useTrainingHint = useTrainingHint;
   window.proceedNextTrainingNode = proceedNextTrainingNode;
+  window.switchCommsChannel = switchCommsChannel;
+  window.refreshGlobalComms = refreshGlobalComms;
+  window.handleSendGlobalComms = handleSendGlobalComms;
+  window.sendQuickGlobalChip = sendQuickGlobalChip;
+  window.openDirectChatWithUser = openDirectChatWithUser;
+  window.handleSendDirectComms = handleSendDirectComms;
+  window.challengeDirectChatUser = challengeDirectChatUser;
+  window.refreshConnectionsList = refreshConnectionsList;
+  window.toggleConnectionWithUser = toggleConnectionWithUser;
+  window.toggleDossierConnection = toggleDossierConnection;
+  window.openDirectCommsFromDossier = openDirectCommsFromDossier;
+  window.selectRecoveryMethod = selectRecoveryMethod;
+  window.fetchRecoveryQuestion = fetchRecoveryQuestion;
+  window.handleRecoverySubmit = handleRecoverySubmit;
+  window.showRecoveryKeyModal = showRecoveryKeyModal;
+  window.closeRecoveryKeyModal = closeRecoveryKeyModal;
+  window.copyRecoveryKey = copyRecoveryKey;
+
 }

@@ -1,0 +1,41 @@
+{
+  "globalMessages": [
+    {
+      "id": "welcome-comms-1",
+      "sender": "Sakilur_Leader",
+      "gender": "male",
+      "avatar": "👑",
+      "text": "স্বাগতম সাইবার কমস সেন্টারে! এখানে সবাই কানেক্ট হয়ে স্ট্র্যাটেজি ও ডিফেন্স ট্যাকটিক্স শেয়ার করতে পারেন। 🛡️",
+      "timestamp": 1795413148066
+    },
+    {
+      "id": "welcome-comms-2",
+      "sender": "CyberQueen_Ayesha",
+      "gender": "female",
+      "avatar": "👩‍💻",
+      "text": "লেভেল ৪ এর জিরো ট্রাস্ট আর্কিটেকচার কমপ্লিট করলাম! কেউ কি ১v১ ডুয়েলে আসতে চান? ⚡",
+      "timestamp": 1795414948066
+    },
+    {
+      "id": "2a52f57b-353d-4b1f-888a-7dec5153b1fe",
+      "sender": "OperativeX_6293",
+      "gender": "male",
+      "avatar": "👨‍💻",
+      "text": "Hello from Dhaka Cyber Command! 🛡️",
+      "timestamp": 1795416748069
+    }
+  ],
+  "directChats": {
+    "operativex_6293___operativey_5037": [
+      {
+        "id": "9951fef5-3ff4-450b-9589-9153a5160a61",
+        "sender": "OperativeX_6293",
+        "recipient": "OperativeY_5037",
+        "gender": "male",
+        "avatar": "👨‍💻",
+        "text": "Are you ready for our 1v1 battle duel tonight? ⚡",
+        "timestamp": 1795416748080
+      }
+    ]
+  }
+}

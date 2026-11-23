@@ -3,6 +3,9 @@
     "id": "a5dff609-7695-4b86-88c3-2cf4251d6282",
     "username": "Sakilur_Leader",
     "pinHash": "158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab",
+    "recoveryKey": "KEY-SAKILUR-2026",
+    "securityQuestion": "আপনার প্রিয় সাইবার সিকিউরিটি বিষয় কোনটি?",
+    "securityAnswerHash": "158a323a7ba44870f23d96f1516dd70aa48e9a72db4ebb026b0a89e212a208ab",
     "gender": "male",
     "avatar": "👑",
     "division": "Dhaka",
@@ -16,6 +19,7 @@
       "l2m1", "l2m2", "l2m3", "l2m4", "l2m5",
       "l3m1", "l3m2", "l3m3", "l3m4", "l3m5"
     ],
+    "connections": [],
     "battles": {
       "total": 2,
       "wins": 2,
